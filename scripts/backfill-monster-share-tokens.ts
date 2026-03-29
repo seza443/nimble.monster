@@ -1,5 +1,6 @@
 import { eq, isNull, or } from "drizzle-orm";
-import { getDatabase, schema } from "@/lib/db";
+import { getDatabase } from "@/lib/db";
+import * as schema from "@/lib/db/schema";
 
 function generateShareToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
