@@ -24,10 +24,18 @@ vi.mock("@/lib/auth", () => ({
 const { mockGetPublicOrPrivateMonsterForUser } = vi.hoisted(() => ({
   mockGetPublicOrPrivateMonsterForUser: vi.fn(),
 }));
+const { mockGetMonsterShareToken } = vi.hoisted(() => ({
+  mockGetMonsterShareToken: vi.fn(),
+}));
+const { mockGetMonster } = vi.hoisted(() => ({
+  mockGetMonster: vi.fn(),
+}));
 
 vi.mock("@/lib/services/monsters", () => ({
   monstersService: {
     getPublicOrPrivateMonsterForUser: mockGetPublicOrPrivateMonsterForUser,
+    getMonsterShareToken: mockGetMonsterShareToken,
+    getMonster: mockGetMonster,
   },
 }));
 
@@ -67,6 +75,8 @@ describe("GET /api/monsters/[id]", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetAuthenticatedUser.mockResolvedValue(null);
+    mockGetMonsterShareToken.mockResolvedValue(null);
+    mockGetMonster.mockResolvedValue(null);
   });
 
   const createMockParams = (id: string) => ({
@@ -604,5 +614,69 @@ describe("GET /api/monsters/[id]", () => {
       "550e8400-e29b-41d4-a716-446655440000",
       "other-discord"
     );
+  });
+
+  it("should return private monster when token matches", async () => {
+    const privateMonster: Monster = {
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      name: "Secret Goblin",
+      level: "1",
+      levelInt: 1,
+      hp: 10,
+      legendary: false,
+      minion: false,
+      armor: "none",
+      size: "small",
+      speed: 6,
+      fly: 0,
+      swim: 0,
+      climb: 0,
+      teleport: 0,
+      burrow: 0,
+      visibility: "private",
+      families: [],
+      abilities: [],
+      actions: [],
+      actionPreface: "",
+      creator: fakeCreator,
+      createdAt: new Date("2025-01-01"),
+      updatedAt: new Date("2025-01-01"),
+    };
+
+    mockGetMonsterShareToken.mockResolvedValue({
+      visibility: "private",
+      shareToken: "correct-token",
+    });
+    mockGetMonster.mockResolvedValue(privateMonster);
+
+    const request = new Request(
+      "http://localhost:3000/api/monsters/secret-goblin-abc?token=correct-token"
+    );
+    const response = await GET(request, createMockParams("secret-goblin-abc"));
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.data.attributes.name).toBe("Secret Goblin");
+    expect(mockGetMonsterShareToken).toHaveBeenCalledWith(
+      "550e8400-e29b-41d4-a716-446655440000"
+    );
+    expect(mockGetMonster).toHaveBeenCalledWith("550e8400-e29b-41d4-a716-446655440000");
+  });
+
+  it("should return 404 when token does not match", async () => {
+    mockGetMonsterShareToken.mockResolvedValue({
+      visibility: "private",
+      shareToken: "correct-token",
+    });
+
+    const request = new Request(
+      "http://localhost:3000/api/monsters/secret-goblin-abc?token=wrong-token"
+    );
+    const response = await GET(request, createMockParams("secret-goblin-abc"));
+    const data = await response.json();
+
+    expect(response.status).toBe(404);
+    expect(data.errors[0].title).toBe("Monster not found");
+    expect(mockGetPublicOrPrivateMonsterForUser).not.toHaveBeenCalled();
   });
 });

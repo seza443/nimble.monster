@@ -607,6 +607,31 @@ export const findMonster = async (id: string): Promise<Monster | null> => {
   return data ? toMonsterFromFullData(data) : null;
 };
 
+export const findMonsterShareToken = async (
+  id: string
+): Promise<{ visibility: "public" | "private"; shareToken: string | null } | null> => {
+  if (!isValidUUID(id)) return null;
+
+  const db = await getDatabase();
+
+  const rows = await db
+    .select({
+      visibility: monsters.visibility,
+      shareToken: monsters.shareToken,
+    })
+    .from(monsters)
+    .where(eq(monsters.id, id))
+    .limit(1);
+
+  if (rows.length === 0) return null;
+  const row = rows[0];
+
+  return {
+    visibility: (row.visibility ?? "public") as "public" | "private",
+    shareToken: row.shareToken ?? null,
+  };
+};
+
 export const findMonstersByIds = async (ids: string[]): Promise<Monster[]> => {
   const validIds = ids.filter(isValidUUID);
   if (validIds.length === 0) return [];

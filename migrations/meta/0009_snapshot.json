@@ -2,7 +2,7 @@
   "version": "6",
   "dialect": "sqlite",
   "id": "b1612468-00d7-4de5-bb65-2758b2b167fb",
-  "prevId": "f9dc3f38-acc8-437c-a9ae-228f9025f7cc",
+  "prevId": "8f2c9a1e-4d3b-4f8a-9c7d-000800080008",
   "tables": {
     "ancestries": {
       "name": "ancestries",

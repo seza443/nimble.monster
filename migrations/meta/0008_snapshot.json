@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f9dc3f38-acc8-437c-a9ae-228f9025f7cc",
+  "id": "8f2c9a1e-4d3b-4f8a-9c7d-000800080008",
   "prevId": "f9dc3f38-acc8-437c-a9ae-228f9025f7cc",
   "tables": {
     "ancestries": {

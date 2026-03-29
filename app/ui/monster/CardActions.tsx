@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { ExternalLink, FileText } from "lucide-react";
 import {
@@ -12,33 +12,45 @@ import {
   getMonsterImageUrl,
   getMonsterMarkdownUrl,
   getMonsterUrl,
+  getMonsterJsonUrl,
 } from "@/lib/utils/url";
 
 interface MonsterCardActionsProps {
   monster: Monster;
+  shareToken?: string | null;
 }
 
-export default function CardActions({ monster }: MonsterCardActionsProps) {
+export default function CardActions({ monster, shareToken }: MonsterCardActionsProps) {
   const isPublic = monster.visibility === "public";
 
   if (!monster.id) {
     return null;
   }
 
+  const jsonUrl = (() => {
+    if (isPublic || !shareToken) return getMonsterJsonUrl(monster);
+    const params = new URLSearchParams({ token: shareToken });
+    return `${getMonsterJsonUrl(monster)}?${params.toString()}`;
+  })();
+
   return (
     <div className="flex gap-2">
-      <ShareMenu disabled={!isPublic}>
-        <DropdownMenuItem asChild>
-          <a
-            className="flex gap-2 items-center"
-            href={`http://nimbrew.net/${monster.legendary ? "statblock-legendary" : "statblock-generic"}?urlJson=https://nimble.monster${getMonsterUrl(monster)}/nimbrew.json`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <ExternalLink className="w-4 h-4" />
-            Send to Nimbrew
-          </a>
-        </DropdownMenuItem>
+      {!isPublic && <ShareMenu disabled/>}
+      <ShareMenu>
+        {/* Nimbrew cannot access private monsters by URL */}
+        {isPublic && (
+          <DropdownMenuItem asChild>
+            <a
+              className="flex gap-2 items-center"
+              href={`http://nimbrew.net/${monster.legendary ? "statblock-legendary" : "statblock-generic"}?urlJson=https://nimble.monster${getMonsterUrl(monster)}/nimbrew.json`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Send to Nimbrew
+            </a>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <a
             className="flex gap-2 items-center"
@@ -61,12 +73,25 @@ export default function CardActions({ monster }: MonsterCardActionsProps) {
             Export to Markdown (Full)
           </a>
         </DropdownMenuItem>
-        <ShareMenuDownloadCardItem
-          name={`${monster.name}.png`}
-          path={getMonsterImageUrl(monster)}
-        />
+        <DropdownMenuItem asChild>
+          <a
+            className="flex gap-2 items-center"
+            href={getMonsterJsonUrl(monster)}
+            download={`${monster.name}.json`}
+          >
+            <FileText className="w-4 h-4" />
+            Export to JSON
+          </a>
+        </DropdownMenuItem>
+        {/* Image export is not supported for private monsters */}
+        {isPublic && (
+          <ShareMenuDownloadCardItem
+            name={`${monster.name}.png`}
+            path={getMonsterImageUrl(monster)}
+          />
+        )}
         <ShareMenuCopyURLItem
-          path={getMonsterUrl(monster)}
+          path={jsonUrl}
           updatedAt={monster.updatedAt}
         />
       </ShareMenu>

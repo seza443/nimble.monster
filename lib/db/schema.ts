@@ -8,6 +8,11 @@ import {
   unique,
 } from "drizzle-orm/sqlite-core";
 
+function generateShareToken(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return Buffer.from(bytes).toString("base64url");
+}
+
 // Enum value types (stored as text in SQLite)
 export type ArmorType = "" | "medium" | "heavy";
 export type SizeType =
@@ -147,6 +152,9 @@ export const monsters = sqliteTable(
     isOfficial: integer("is_official", { mode: "boolean" })
       .notNull()
       .default(false),
+    shareToken: text("share_token")
+      .unique()
+      .$defaultFn(generateShareToken),
   },
   (table) => [index("idx_monsters_user_id").on(table.userId)]
 );

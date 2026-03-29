@@ -192,6 +192,7 @@ interface CardProps {
   hideActions?: boolean;
   hideDescription?: boolean;
   className?: string;
+  shareToken?: string | null;
   selectable?: boolean;
   selected?: boolean;
   onSelect?: () => void;
@@ -204,6 +205,7 @@ export const Card = ({
   hideActions = false,
   hideDescription = false,
   className,
+  shareToken,
   selectable = false,
   selected = false,
   onSelect,
@@ -318,7 +320,7 @@ export const Card = ({
         awards={monster.awards}
         hideActions={selectable || hideActions}
         className={cn(selectable && "pointer-events-none")}
-        actionsSlot={<CardActions monster={monster} />}
+        actionsSlot={<CardActions monster={monster} shareToken={shareToken} />}
         paperforgeSlot={
           paperforgeEntry && <PaperforgeLink entry={paperforgeEntry} />
         }

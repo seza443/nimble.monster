@@ -90,6 +90,11 @@ export default async function MonsterPage({
     return notFound();
   }
 
+  const shareToken =
+    monster.visibility === "private" && isOwner
+      ? (await monstersService.getMonsterShareToken(uid))?.shareToken ?? null
+      : null;
+
   return (
     <>
       <div className="flex justify-end items-start gap-2 mb-6">
@@ -106,7 +111,12 @@ export default async function MonsterPage({
           monster.legendary ? "w-2xl" : "w-md"
         )}
       >
-        <Card monster={monster} creator={monster.creator} link={false} />
+        <Card
+          monster={monster}
+          creator={monster.creator}
+          link={false}
+          shareToken={shareToken}
+        />
         <MonsterCollections collections={collections} />
         <MonsterRemixes remixes={remixes} />
       </div>
