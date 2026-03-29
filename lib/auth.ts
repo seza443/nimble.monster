@@ -28,6 +28,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true,
   providers: [
     Discord({
+      // OAuth2 defaults to PKCE; the verifier cookie can fail to round-trip in
+      // production (proxy, domain, or multi-instance). Discord is a confidential
+      // client (client secret), so state-based CSRF is sufficient.
+      checks: ["state"],
       // Documentation:
       // > That means you only have to override part of the options that you
       // > need to be different. For example if you want different scopes,
