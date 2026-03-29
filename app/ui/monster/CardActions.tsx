@@ -13,18 +13,25 @@ import {
   getMonsterMarkdownUrl,
   getMonsterUrl,
   getMonsterJsonUrl,
-  } from "@/lib/utils/url";
+} from "@/lib/utils/url";
 
 interface MonsterCardActionsProps {
   monster: Monster;
+  shareToken?: string | null;
 }
 
-export default function CardActions({ monster }: MonsterCardActionsProps) {
+export default function CardActions({ monster, shareToken }: MonsterCardActionsProps) {
   const isPublic = monster.visibility === "public";
 
   if (!monster.id) {
     return null;
   }
+
+  const jsonUrl = (() => {
+    if (isPublic || !shareToken) return getMonsterJsonUrl(monster);
+    const params = new URLSearchParams({ token: shareToken });
+    return `${getMonsterJsonUrl(monster)}?${params.toString()}`;
+  })();
 
   return (
     <div className="flex gap-2">
@@ -84,7 +91,7 @@ export default function CardActions({ monster }: MonsterCardActionsProps) {
           />
         )}
         <ShareMenuCopyURLItem
-          path={getMonsterUrl(monster)}
+          path={jsonUrl}
           updatedAt={monster.updatedAt}
         />
       </ShareMenu>

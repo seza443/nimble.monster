@@ -188,6 +188,7 @@ interface CardProps {
   hideActions?: boolean;
   hideDescription?: boolean;
   className?: string;
+  shareToken?: string | null;
 }
 
 export const Card = ({
@@ -197,6 +198,7 @@ export const Card = ({
   hideActions = false,
   hideDescription = false,
   className,
+  shareToken,
 }: CardProps) => {
   const { allConditions: conditions } = useConditions({
     creatorId: creator?.discordId,
@@ -301,7 +303,7 @@ export const Card = ({
           source={monster.source}
           awards={monster.awards}
           hideActions={hideActions}
-          actionsSlot={<CardActions monster={monster} />}
+          actionsSlot={<CardActions monster={monster} shareToken={shareToken} />}
           paperforgeSlot={
             paperforgeEntry && <PaperforgeLink entry={paperforgeEntry} />
           }

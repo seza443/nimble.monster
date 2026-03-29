@@ -11,12 +11,14 @@ import { TooltipProvider } from "./ui/tooltip";
 
 export const copyLinkToClipboard = async (path: string, updatedAt?: Date) => {
   try {
-    let url = `${window.location.origin}${path}`;
+    const url = new URL(path, window.location.origin);
+
     if (updatedAt) {
       const timestamp = Math.floor(updatedAt.getTime() / 1000);
-      url += `?t=${timestamp}`;
+      url.searchParams.set("t", String(timestamp));
     }
-    await navigator.clipboard.writeText(url);
+
+    await navigator.clipboard.writeText(url.toString());
     const activeElement = document.activeElement as HTMLElement;
     activeElement?.blur?.();
   } catch (error) {

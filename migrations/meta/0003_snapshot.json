@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "a2a6e9bd-d63e-4ae9-a9e4-845d70e5df65",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "586aee8d-e4d2-4046-a60a-8ff9c06e3c42",
+  "prevId": "a2a6e9bd-d63e-4ae9-a9e4-845d70e5df65",
   "tables": {
     "ancestries": {
       "name": "ancestries",
@@ -94,7 +94,9 @@
       "indexes": {
         "idx_ancestries_user_id": {
           "name": "idx_ancestries_user_id",
-          "columns": ["user_id"],
+          "columns": [
+            "user_id"
+          ],
           "isUnique": false
         }
       },
@@ -103,8 +105,12 @@
           "name": "ancestries_user_id_users_id_fk",
           "tableFrom": "ancestries",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "cascade"
         },
@@ -112,8 +118,12 @@
           "name": "ancestries_source_id_sources_id_fk",
           "tableFrom": "ancestries",
           "tableTo": "sources",
-          "columnsFrom": ["source_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "cascade"
         }
@@ -146,8 +156,12 @@
           "name": "ancestries_awards_ancestry_id_ancestries_id_fk",
           "tableFrom": "ancestries_awards",
           "tableTo": "ancestries",
-          "columnsFrom": ["ancestry_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "ancestry_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -155,15 +169,22 @@
           "name": "ancestries_awards_award_id_awards_id_fk",
           "tableFrom": "ancestries_awards",
           "tableTo": "awards",
-          "columnsFrom": ["award_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "award_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
         "ancestries_awards_ancestry_id_award_id_pk": {
-          "columns": ["ancestry_id", "award_id"],
+          "columns": [
+            "ancestry_id",
+            "award_id"
+          ],
           "name": "ancestries_awards_ancestry_id_award_id_pk"
         }
       },
@@ -249,7 +270,9 @@
       "indexes": {
         "awards_slug_unique": {
           "name": "awards_slug_unique",
-          "columns": ["slug"],
+          "columns": [
+            "slug"
+          ],
           "isUnique": true
         }
       },
@@ -331,7 +354,9 @@
       "indexes": {
         "idx_backgrounds_user_id": {
           "name": "idx_backgrounds_user_id",
-          "columns": ["user_id"],
+          "columns": [
+            "user_id"
+          ],
           "isUnique": false
         }
       },
@@ -340,8 +365,12 @@
           "name": "backgrounds_user_id_users_id_fk",
           "tableFrom": "backgrounds",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "cascade"
         },
@@ -349,8 +378,12 @@
           "name": "backgrounds_source_id_sources_id_fk",
           "tableFrom": "backgrounds",
           "tableTo": "sources",
-          "columnsFrom": ["source_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "cascade"
         }
@@ -383,8 +416,12 @@
           "name": "backgrounds_awards_background_id_backgrounds_id_fk",
           "tableFrom": "backgrounds_awards",
           "tableTo": "backgrounds",
-          "columnsFrom": ["background_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "background_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -392,15 +429,22 @@
           "name": "backgrounds_awards_award_id_awards_id_fk",
           "tableFrom": "backgrounds_awards",
           "tableTo": "awards",
-          "columnsFrom": ["award_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "award_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
         "backgrounds_awards_background_id_award_id_pk": {
-          "columns": ["background_id", "award_id"],
+          "columns": [
+            "background_id",
+            "award_id"
+          ],
           "name": "backgrounds_awards_background_id_award_id_pk"
         }
       },
@@ -475,7 +519,9 @@
       "indexes": {
         "idx_collections_user_id": {
           "name": "idx_collections_user_id",
-          "columns": ["user_id"],
+          "columns": [
+            "user_id"
+          ],
           "isUnique": false
         }
       },
@@ -484,8 +530,12 @@
           "name": "collections_user_id_users_id_fk",
           "tableFrom": "collections",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
@@ -646,7 +696,9 @@
       "indexes": {
         "idx_companions_user_id": {
           "name": "idx_companions_user_id",
-          "columns": ["user_id"],
+          "columns": [
+            "user_id"
+          ],
           "isUnique": false
         }
       },
@@ -655,8 +707,12 @@
           "name": "companions_user_id_users_id_fk",
           "tableFrom": "companions",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "cascade"
         },
@@ -664,8 +720,12 @@
           "name": "companions_source_id_sources_id_fk",
           "tableFrom": "companions",
           "tableTo": "sources",
-          "columnsFrom": ["source_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "cascade"
         }
@@ -698,8 +758,12 @@
           "name": "companions_awards_companion_id_companions_id_fk",
           "tableFrom": "companions_awards",
           "tableTo": "companions",
-          "columnsFrom": ["companion_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "companion_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -707,15 +771,22 @@
           "name": "companions_awards_award_id_awards_id_fk",
           "tableFrom": "companions_awards",
           "tableTo": "awards",
-          "columnsFrom": ["award_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "award_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
         "companions_awards_companion_id_award_id_pk": {
-          "columns": ["companion_id", "award_id"],
+          "columns": [
+            "companion_id",
+            "award_id"
+          ],
           "name": "companions_awards_companion_id_award_id_pk"
         }
       },
@@ -784,8 +855,12 @@
           "name": "conditions_creator_id_users_id_fk",
           "tableFrom": "conditions",
           "tableTo": "users",
-          "columnsFrom": ["creator_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "creator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "cascade"
         }
@@ -875,12 +950,18 @@
       "indexes": {
         "idx_entity_images_status_started": {
           "name": "idx_entity_images_status_started",
-          "columns": ["generation_status", "generation_started_at"],
+          "columns": [
+            "generation_status",
+            "generation_started_at"
+          ],
           "isUnique": false
         },
         "entity_images_entity_type_entity_id_unique": {
           "name": "entity_images_entity_type_entity_id_unique",
-          "columns": ["entity_type", "entity_id"],
+          "columns": [
+            "entity_type",
+            "entity_id"
+          ],
           "isUnique": true
         }
       },
@@ -967,8 +1048,12 @@
           "name": "families_user_id_users_id_fk",
           "tableFrom": "families",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "cascade"
         }
@@ -1103,7 +1188,9 @@
       "indexes": {
         "idx_items_user_id": {
           "name": "idx_items_user_id",
-          "columns": ["user_id"],
+          "columns": [
+            "user_id"
+          ],
           "isUnique": false
         }
       },
@@ -1112,8 +1199,12 @@
           "name": "items_user_id_users_id_fk",
           "tableFrom": "items",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "cascade"
         },
@@ -1121,8 +1212,12 @@
           "name": "items_source_id_sources_id_fk",
           "tableFrom": "items",
           "tableTo": "sources",
-          "columnsFrom": ["source_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "cascade"
         }
@@ -1155,8 +1250,12 @@
           "name": "items_awards_item_id_items_id_fk",
           "tableFrom": "items_awards",
           "tableTo": "items",
-          "columnsFrom": ["item_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1164,15 +1263,22 @@
           "name": "items_awards_award_id_awards_id_fk",
           "tableFrom": "items_awards",
           "tableTo": "awards",
-          "columnsFrom": ["award_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "award_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
         "items_awards_item_id_award_id_pk": {
-          "columns": ["item_id", "award_id"],
+          "columns": [
+            "item_id",
+            "award_id"
+          ],
           "name": "items_awards_item_id_award_id_pk"
         }
       },
@@ -1203,8 +1309,12 @@
           "name": "items_collections_item_id_items_id_fk",
           "tableFrom": "items_collections",
           "tableTo": "items",
-          "columnsFrom": ["item_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "item_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1212,15 +1322,22 @@
           "name": "items_collections_collection_id_collections_id_fk",
           "tableFrom": "items_collections",
           "tableTo": "collections",
-          "columnsFrom": ["collection_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "collection_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {
         "items_collections_item_id_collection_id_pk": {
-          "columns": ["item_id", "collection_id"],
+          "columns": [
+            "item_id",
+            "collection_id"
+          ],
           "name": "items_collections_item_id_collection_id_pk"
         }
       },
@@ -1474,12 +1591,28 @@
           "notNull": true,
           "autoincrement": false,
           "default": false
+        },
+        "share_token": {
+          "name": "share_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
+        "monsters_share_token_unique": {
+          "name": "monsters_share_token_unique",
+          "columns": [
+            "share_token"
+          ],
+          "isUnique": true
+        },
         "idx_monsters_user_id": {
           "name": "idx_monsters_user_id",
-          "columns": ["user_id"],
+          "columns": [
+            "user_id"
+          ],
           "isUnique": false
         }
       },
@@ -1488,8 +1621,12 @@
           "name": "monsters_user_id_users_id_fk",
           "tableFrom": "monsters",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
         },
@@ -1497,965 +1634,16 @@
           "name": "monsters_source_id_sources_id_fk",
           "tableFrom": "monsters",
           "tableTo": "sources",
-          "columnsFrom": ["source_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "source_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "cascade"
         }
       },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "monsters_awards": {
-      "name": "monsters_awards",
-      "columns": {
-        "monster_id": {
-          "name": "monster_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "award_id": {
-          "name": "award_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "monsters_awards_monster_id_monsters_id_fk": {
-          "name": "monsters_awards_monster_id_monsters_id_fk",
-          "tableFrom": "monsters_awards",
-          "tableTo": "monsters",
-          "columnsFrom": ["monster_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "monsters_awards_award_id_awards_id_fk": {
-          "name": "monsters_awards_award_id_awards_id_fk",
-          "tableFrom": "monsters_awards",
-          "tableTo": "awards",
-          "columnsFrom": ["award_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "monsters_awards_monster_id_award_id_pk": {
-          "columns": ["monster_id", "award_id"],
-          "name": "monsters_awards_monster_id_award_id_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "monsters_collections": {
-      "name": "monsters_collections",
-      "columns": {
-        "monster_id": {
-          "name": "monster_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "collection_id": {
-          "name": "collection_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "monsters_collections_monster_id_monsters_id_fk": {
-          "name": "monsters_collections_monster_id_monsters_id_fk",
-          "tableFrom": "monsters_collections",
-          "tableTo": "monsters",
-          "columnsFrom": ["monster_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "monsters_collections_collection_id_collections_id_fk": {
-          "name": "monsters_collections_collection_id_collections_id_fk",
-          "tableFrom": "monsters_collections",
-          "tableTo": "collections",
-          "columnsFrom": ["collection_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "monsters_collections_monster_id_collection_id_pk": {
-          "columns": ["monster_id", "collection_id"],
-          "name": "monsters_collections_monster_id_collection_id_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "monsters_conditions": {
-      "name": "monsters_conditions",
-      "columns": {
-        "monster_id": {
-          "name": "monster_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "condition_id": {
-          "name": "condition_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "inline": {
-          "name": "inline",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "monsters_conditions_monster_id_monsters_id_fk": {
-          "name": "monsters_conditions_monster_id_monsters_id_fk",
-          "tableFrom": "monsters_conditions",
-          "tableTo": "monsters",
-          "columnsFrom": ["monster_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "monsters_conditions_condition_id_conditions_id_fk": {
-          "name": "monsters_conditions_condition_id_conditions_id_fk",
-          "tableFrom": "monsters_conditions",
-          "tableTo": "conditions",
-          "columnsFrom": ["condition_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "monsters_conditions_monster_id_condition_id_pk": {
-          "columns": ["monster_id", "condition_id"],
-          "name": "monsters_conditions_monster_id_condition_id_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "monsters_families": {
-      "name": "monsters_families",
-      "columns": {
-        "monster_id": {
-          "name": "monster_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "family_id": {
-          "name": "family_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "monsters_families_monster_id_monsters_id_fk": {
-          "name": "monsters_families_monster_id_monsters_id_fk",
-          "tableFrom": "monsters_families",
-          "tableTo": "monsters",
-          "columnsFrom": ["monster_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "monsters_families_family_id_families_id_fk": {
-          "name": "monsters_families_family_id_families_id_fk",
-          "tableFrom": "monsters_families",
-          "tableTo": "families",
-          "columnsFrom": ["family_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "monsters_families_monster_id_family_id_pk": {
-          "columns": ["monster_id", "family_id"],
-          "name": "monsters_families_monster_id_family_id_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "sources": {
-      "name": "sources",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "license": {
-          "name": "license",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "link": {
-          "name": "link",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "abbreviation": {
-          "name": "abbreviation",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "spell_schools": {
-      "name": "spell_schools",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "visibility": {
-          "name": "visibility",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "'public'"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "source_id": {
-          "name": "source_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        }
-      },
-      "indexes": {
-        "idx_spell_schools_user_id": {
-          "name": "idx_spell_schools_user_id",
-          "columns": ["user_id"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "spell_schools_user_id_users_id_fk": {
-          "name": "spell_schools_user_id_users_id_fk",
-          "tableFrom": "spell_schools",
-          "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "cascade"
-        },
-        "spell_schools_source_id_sources_id_fk": {
-          "name": "spell_schools_source_id_sources_id_fk",
-          "tableFrom": "spell_schools",
-          "tableTo": "sources",
-          "columnsFrom": ["source_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "spell_schools_awards": {
-      "name": "spell_schools_awards",
-      "columns": {
-        "school_id": {
-          "name": "school_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "award_id": {
-          "name": "award_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "spell_schools_awards_school_id_spell_schools_id_fk": {
-          "name": "spell_schools_awards_school_id_spell_schools_id_fk",
-          "tableFrom": "spell_schools_awards",
-          "tableTo": "spell_schools",
-          "columnsFrom": ["school_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "spell_schools_awards_award_id_awards_id_fk": {
-          "name": "spell_schools_awards_award_id_awards_id_fk",
-          "tableFrom": "spell_schools_awards",
-          "tableTo": "awards",
-          "columnsFrom": ["award_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "spell_schools_awards_school_id_award_id_pk": {
-          "columns": ["school_id", "award_id"],
-          "name": "spell_schools_awards_school_id_award_id_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "spell_schools_collections": {
-      "name": "spell_schools_collections",
-      "columns": {
-        "spell_school_id": {
-          "name": "spell_school_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "collection_id": {
-          "name": "collection_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "spell_schools_collections_spell_school_id_spell_schools_id_fk": {
-          "name": "spell_schools_collections_spell_school_id_spell_schools_id_fk",
-          "tableFrom": "spell_schools_collections",
-          "tableTo": "spell_schools",
-          "columnsFrom": ["spell_school_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "spell_schools_collections_collection_id_collections_id_fk": {
-          "name": "spell_schools_collections_collection_id_collections_id_fk",
-          "tableFrom": "spell_schools_collections",
-          "tableTo": "collections",
-          "columnsFrom": ["collection_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "spell_schools_collections_spell_school_id_collection_id_pk": {
-          "columns": ["spell_school_id", "collection_id"],
-          "name": "spell_schools_collections_spell_school_id_collection_id_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "spells": {
-      "name": "spells",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "school_id": {
-          "name": "school_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "tier": {
-          "name": "tier",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "actions": {
-          "name": "actions",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 1
-        },
-        "reaction": {
-          "name": "reaction",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "target_type": {
-          "name": "target_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "target_kind": {
-          "name": "target_kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "target_distance": {
-          "name": "target_distance",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "damage": {
-          "name": "damage",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "high_levels": {
-          "name": "high_levels",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "concentration": {
-          "name": "concentration",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "upcast": {
-          "name": "upcast",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        }
-      },
-      "indexes": {
-        "idx_spells_school_id": {
-          "name": "idx_spells_school_id",
-          "columns": ["school_id"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "spells_school_id_spell_schools_id_fk": {
-          "name": "spells_school_id_spell_schools_id_fk",
-          "tableFrom": "spells",
-          "tableTo": "spell_schools",
-          "columnsFrom": ["school_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "subclass_abilities": {
-      "name": "subclass_abilities",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "subclass_id": {
-          "name": "subclass_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "level": {
-          "name": "level",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "order_index": {
-          "name": "order_index",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "idx_subclass_abilities_subclass_id": {
-          "name": "idx_subclass_abilities_subclass_id",
-          "columns": ["subclass_id"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "subclass_abilities_subclass_id_subclasses_id_fk": {
-          "name": "subclass_abilities_subclass_id_subclasses_id_fk",
-          "tableFrom": "subclass_abilities",
-          "tableTo": "subclasses",
-          "columnsFrom": ["subclass_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "subclasses": {
-      "name": "subclasses",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "class_name": {
-          "name": "class_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name_preface": {
-          "name": "name_preface",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "visibility": {
-          "name": "visibility",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "'public'"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "source_id": {
-          "name": "source_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        },
-        "tagline": {
-          "name": "tagline",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "idx_subclasses_user_id": {
-          "name": "idx_subclasses_user_id",
-          "columns": ["user_id"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "subclasses_user_id_users_id_fk": {
-          "name": "subclasses_user_id_users_id_fk",
-          "tableFrom": "subclasses",
-          "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "cascade"
-        },
-        "subclasses_source_id_sources_id_fk": {
-          "name": "subclasses_source_id_sources_id_fk",
-          "tableFrom": "subclasses",
-          "tableTo": "sources",
-          "columnsFrom": ["source_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "subclasses_awards": {
-      "name": "subclasses_awards",
-      "columns": {
-        "subclass_id": {
-          "name": "subclass_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "award_id": {
-          "name": "award_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "subclasses_awards_subclass_id_subclasses_id_fk": {
-          "name": "subclasses_awards_subclass_id_subclasses_id_fk",
-          "tableFrom": "subclasses_awards",
-          "tableTo": "subclasses",
-          "columnsFrom": ["subclass_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        },
-        "subclasses_awards_award_id_awards_id_fk": {
-          "name": "subclasses_awards_award_id_awards_id_fk",
-          "tableFrom": "subclasses_awards",
-          "tableTo": "awards",
-          "columnsFrom": ["award_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "subclasses_awards_subclass_id_award_id_pk": {
-          "columns": ["subclass_id", "award_id"],
-          "name": "subclasses_awards_subclass_id_award_id_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "users": {
-      "name": "users",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "discord_id": {
-          "name": "discord_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "username": {
-          "name": "username",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "avatar": {
-          "name": "avatar",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "refresh_token": {
-          "name": "refresh_token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "display_name": {
-          "name": "display_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "image_url": {
-          "name": "image_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "role": {
-          "name": "role",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "''"
-        },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "email_verified": {
-          "name": "email_verified",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
-        },
-        "banner_dismissed": {
-          "name": "banner_dismissed",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "CURRENT_TIMESTAMP"
-        }
-      },
-      "indexes": {
-        "users_discord_id_unique": {
-          "name": "users_discord_id_unique",
-          "columns": ["discord_id"],
-          "isUnique": true
-        },
-        "users_username_unique": {
-          "name": "users_username_unique",
-          "columns": ["username"],
-          "isUnique": true
-        },
-        "users_email_unique": {
-          "name": "users_email_unique",
-          "columns": ["email"],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

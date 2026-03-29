@@ -46,6 +46,12 @@ export class MonstersService {
     return monster;
   }
 
+  async getMonsterShareToken(
+    id: string
+  ): Promise<{ visibility: "public" | "private"; shareToken: string | null } | null> {
+    return repository.findMonsterShareToken(id);
+  }
+
   async getMonster(monsterId: string): Promise<Monster | null> {
     return repository.findMonster(monsterId);
   }

@@ -8,6 +8,7 @@ import { toJsonApiMonster } from "@/lib/services/monsters/converters";
 import { telemetry } from "@/lib/telemetry";
 import { deslugify } from "@/lib/utils/slug";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { timingSafeEqual } from "node:crypto";
 
 const CONTENT_TYPE = "application/vnd.api+json";
 
@@ -23,6 +24,7 @@ export const GET = telemetry(
     span?.setAttributes({ "params.id": id });
 
     const include = searchParams.get("include") || undefined;
+    const token = searchParams.get("token") || undefined;
     const includeResources = include
       ? include.split(",").map((r) => r.trim())
       : [];
@@ -68,7 +70,53 @@ export const GET = telemetry(
 
     try {
       const user = await getAuthenticatedUser(_request);
-      const monster = await monstersService.getPublicOrPrivateMonsterForUser(uid, user?.discordId);
+
+      let tokenMatched = false;
+      if (token) {
+        const tokenInfo = await monstersService.getMonsterShareToken(uid);
+        if (!tokenInfo?.shareToken) {
+          const headers = new Headers({ "Content-Type": CONTENT_TYPE });
+          addCorsHeaders(headers);
+          return NextResponse.json(
+            {
+              errors: [
+                {
+                  status: "404",
+                  title: "Monster not found",
+                },
+              ],
+            },
+            { status: 404, headers }
+          );
+        }
+
+        const a = Buffer.from(tokenInfo.shareToken);
+        const b = Buffer.from(token);
+        const match = a.length === b.length && timingSafeEqual(a, b);
+        if (!match) {
+          const headers = new Headers({ "Content-Type": CONTENT_TYPE });
+          addCorsHeaders(headers);
+          return NextResponse.json(
+            {
+              errors: [
+                {
+                  status: "404",
+                  title: "Monster not found",
+                },
+              ],
+            },
+            { status: 404, headers }
+          );
+        }
+        tokenMatched = true;
+      }
+
+      const monster = tokenMatched
+        ? await monstersService.getMonster(uid)
+        : await monstersService.getPublicOrPrivateMonsterForUser(
+            uid,
+            user?.discordId
+          );
 
       if (!monster) {
         const headers = new Headers({ "Content-Type": CONTENT_TYPE });

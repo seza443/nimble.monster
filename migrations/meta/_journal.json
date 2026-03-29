@@ -15,6 +15,13 @@
       "when": 1770783873171,
       "tag": "0002_add_companion_paperforge_id",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1774811299148,
+      "tag": "0003_add_monster_share_token",
+      "breakpoints": true
     }
   ]
 }
