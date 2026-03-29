@@ -1,20 +1,40 @@
-import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray, or } from "drizzle-orm";
+import { findClassesByIds } from "@/lib/db/class";
+import {
+  toClassMini,
+  toCompanionMini,
+  toSpellSchoolMini,
+  toSubclassMini,
+} from "@/lib/db/converters";
 import { findSpellSchoolsByIds } from "@/lib/db/school";
+import { findSubclassesByIds } from "@/lib/db/subclass";
+import { toAncestryMini } from "@/lib/services/ancestries/converters";
+import { findAncestriesByIds } from "@/lib/services/ancestries/repository";
+import { toBackgroundMini } from "@/lib/services/backgrounds/converters";
+import { findBackgroundsByIds } from "@/lib/services/backgrounds/repository";
+import { findCompanionsByIds } from "@/lib/services/companions/repository";
 import { findItemsByIds } from "@/lib/services/items";
 import type { ItemMini } from "@/lib/services/items/types";
 import { findMonstersByIds } from "@/lib/services/monsters";
 import type { MonsterMini } from "@/lib/services/monsters/types";
-import type {
-  Collection,
-  CollectionOverview,
-  SpellSchoolMini,
-  User,
-} from "@/lib/types";
+import type { Collection, CollectionOverview, User } from "@/lib/types";
 import { isValidUUID } from "@/lib/utils/validation";
 import { getDatabase } from "./drizzle";
 import {
+  type AncestryRow,
+  ancestries,
+  ancestriesCollections,
+  type BackgroundRow,
+  backgrounds,
+  backgroundsCollections,
+  type ClassRow,
   type CollectionRow,
+  type CompanionRow,
+  classes,
+  classesCollections,
   collections,
+  companions,
+  companionsCollections,
   type ItemRow,
   items,
   itemsCollections,
@@ -22,8 +42,12 @@ import {
   monsters,
   monstersCollections,
   type SpellSchoolRow,
+  type SubclassRow,
   spellSchools,
   spellSchoolsCollections,
+  spells,
+  subclasses,
+  subclassesCollections,
   type UserRow,
   users,
 } from "./schema";
@@ -68,13 +92,6 @@ const toItemMini = (i: ItemRow): ItemMini => ({
   imageBgColor: i.imageBgColor || undefined,
   createdAt: i.createdAt ? new Date(i.createdAt) : new Date(),
   updatedAt: i.updatedAt ? new Date(i.updatedAt) : new Date(),
-});
-
-const toSpellSchoolMini = (s: SpellSchoolRow): SpellSchoolMini => ({
-  id: s.id,
-  name: s.name,
-  visibility: (s.visibility ?? "public") as "public" | "private",
-  createdAt: s.createdAt ? new Date(s.createdAt) : new Date(),
 });
 
 export const listCollectionsWithMonstersForUser = async (
@@ -134,6 +151,73 @@ export const listCollectionsWithMonstersForUser = async (
     )
     .where(inArray(spellSchoolsCollections.collectionId, collectionIds));
 
+  // Get spell counts for schools in these collections
+  const schoolIds = [...new Set(schoolLinks.map((l) => l.school.id))];
+  const spellCountMap = new Map<string, number>();
+  if (schoolIds.length > 0) {
+    const spellCounts = await db
+      .select({ schoolId: spells.schoolId, count: count() })
+      .from(spells)
+      .where(inArray(spells.schoolId, schoolIds))
+      .groupBy(spells.schoolId);
+    for (const row of spellCounts) {
+      spellCountMap.set(row.schoolId, row.count);
+    }
+  }
+
+  // Get companions for each collection
+  const companionLinks = await db
+    .select({
+      collectionId: companionsCollections.collectionId,
+      companion: companions,
+    })
+    .from(companionsCollections)
+    .innerJoin(companions, eq(companionsCollections.companionId, companions.id))
+    .where(inArray(companionsCollections.collectionId, collectionIds));
+
+  // Get ancestries for each collection
+  const ancestryLinks = await db
+    .select({
+      collectionId: ancestriesCollections.collectionId,
+      ancestry: ancestries,
+    })
+    .from(ancestriesCollections)
+    .innerJoin(ancestries, eq(ancestriesCollections.ancestryId, ancestries.id))
+    .where(inArray(ancestriesCollections.collectionId, collectionIds));
+
+  // Get backgrounds for each collection
+  const backgroundLinks = await db
+    .select({
+      collectionId: backgroundsCollections.collectionId,
+      background: backgrounds,
+    })
+    .from(backgroundsCollections)
+    .innerJoin(
+      backgrounds,
+      eq(backgroundsCollections.backgroundId, backgrounds.id)
+    )
+    .where(inArray(backgroundsCollections.collectionId, collectionIds));
+
+  // Get subclasses for each collection
+  const subclassLinks = await db
+    .select({
+      collectionId: subclassesCollections.collectionId,
+      subclass: subclasses,
+    })
+    .from(subclassesCollections)
+    .innerJoin(subclasses, eq(subclassesCollections.subclassId, subclasses.id))
+    .where(inArray(subclassesCollections.collectionId, collectionIds));
+
+  // Get classes for each collection
+  const classLinks = await db
+    .select({
+      collectionId: classesCollections.collectionId,
+      class: classes,
+    })
+    .from(classesCollections)
+    .innerJoin(classes, eq(classesCollections.classId, classes.id))
+    .where(inArray(classesCollections.collectionId, collectionIds));
+
   // Group by collection
   const monstersByCollection = new Map<string, MonsterRow[]>();
   for (const link of monsterLinks) {
@@ -156,10 +240,50 @@ export const listCollectionsWithMonstersForUser = async (
     schoolsByCollection.set(link.collectionId, existing);
   }
 
+  const companionsByCollection = new Map<string, CompanionRow[]>();
+  for (const link of companionLinks) {
+    const existing = companionsByCollection.get(link.collectionId) || [];
+    existing.push(link.companion);
+    companionsByCollection.set(link.collectionId, existing);
+  }
+
+  const ancestriesByCollection = new Map<string, AncestryRow[]>();
+  for (const link of ancestryLinks) {
+    const existing = ancestriesByCollection.get(link.collectionId) || [];
+    existing.push(link.ancestry);
+    ancestriesByCollection.set(link.collectionId, existing);
+  }
+
+  const backgroundsByCollection = new Map<string, BackgroundRow[]>();
+  for (const link of backgroundLinks) {
+    const existing = backgroundsByCollection.get(link.collectionId) || [];
+    existing.push(link.background);
+    backgroundsByCollection.set(link.collectionId, existing);
+  }
+
+  const subclassesByCollection = new Map<string, SubclassRow[]>();
+  for (const link of subclassLinks) {
+    const existing = subclassesByCollection.get(link.collectionId) || [];
+    existing.push(link.subclass);
+    subclassesByCollection.set(link.collectionId, existing);
+  }
+
+  const classesByCollection = new Map<string, ClassRow[]>();
+  for (const link of classLinks) {
+    const existing = classesByCollection.get(link.collectionId) || [];
+    existing.push(link.class);
+    classesByCollection.set(link.collectionId, existing);
+  }
+
   return collectionRows.map((c) => {
     const collectionMonsters = monstersByCollection.get(c.id) || [];
     const collectionItems = itemsByCollection.get(c.id) || [];
     const collectionSchools = schoolsByCollection.get(c.id) || [];
+    const collectionCompanions = companionsByCollection.get(c.id) || [];
+    const collectionAncestries = ancestriesByCollection.get(c.id) || [];
+    const collectionBackgrounds = backgroundsByCollection.get(c.id) || [];
+    const collectionSubclasses = subclassesByCollection.get(c.id) || [];
+    const collectionClasses = classesByCollection.get(c.id) || [];
 
     const legendaryCount = collectionMonsters.filter((m) => m.legendary).length;
     const standardCount = collectionMonsters.filter(
@@ -175,7 +299,15 @@ export const listCollectionsWithMonstersForUser = async (
       monsters: collectionMonsters.map(toMonsterMini),
       items: collectionItems.map(toItemMini),
       itemCount: collectionItems.length,
-      spellSchools: collectionSchools.map(toSpellSchoolMini),
+      companions: collectionCompanions.map(toCompanionMini),
+      ancestries: collectionAncestries.map(toAncestryMini),
+      backgrounds: collectionBackgrounds.map(toBackgroundMini),
+      subclasses: collectionSubclasses.map(toSubclassMini),
+      classes: collectionClasses.map(toClassMini),
+      spellSchools: collectionSchools.map((s) => ({
+        ...toSpellSchoolMini(s),
+        spellCount: spellCountMap.get(s.id),
+      })),
       legendaryCount,
       standardCount,
       createdAt: c.createdAt ? new Date(c.createdAt) : undefined,
@@ -306,7 +438,12 @@ export interface CreateCollectionInput {
 export interface UpdateCollectionInput extends CreateCollectionInput {
   id: string;
   itemIds?: string[];
+  companionIds?: string[];
+  ancestryIds?: string[];
+  backgroundIds?: string[];
+  subclassIds?: string[];
   spellSchoolIds?: string[];
+  classIds?: string[];
 }
 
 export const createCollection = async (
@@ -394,19 +531,29 @@ export const updateCollection = async (
     })
     .where(eq(collections.id, input.id));
 
-  // Sync monsters
+  // Sync monsters (filtered to accessible: public or owned by user)
   if (input.monsterIds) {
     await db
       .delete(monstersCollections)
       .where(eq(monstersCollections.collectionId, input.id));
 
     if (input.monsterIds.length > 0) {
-      await db.insert(monstersCollections).values(
-        input.monsterIds.map((monsterId) => ({
-          collectionId: input.id,
-          monsterId,
-        }))
-      );
+      const accessible = await db
+        .select({ id: monsters.id })
+        .from(monsters)
+        .where(
+          and(
+            inArray(monsters.id, input.monsterIds),
+            or(eq(monsters.visibility, "public"), eq(monsters.userId, user.id))
+          )
+        );
+      if (accessible.length > 0) {
+        await db
+          .insert(monstersCollections)
+          .values(
+            accessible.map((m) => ({ collectionId: input.id, monsterId: m.id }))
+          );
+      }
     }
   }
 
@@ -417,12 +564,22 @@ export const updateCollection = async (
       .where(eq(itemsCollections.collectionId, input.id));
 
     if (input.itemIds.length > 0) {
-      await db.insert(itemsCollections).values(
-        input.itemIds.map((itemId) => ({
-          collectionId: input.id,
-          itemId,
-        }))
-      );
+      const accessible = await db
+        .select({ id: items.id })
+        .from(items)
+        .where(
+          and(
+            inArray(items.id, input.itemIds),
+            or(eq(items.visibility, "public"), eq(items.userId, user.id))
+          )
+        );
+      if (accessible.length > 0) {
+        await db
+          .insert(itemsCollections)
+          .values(
+            accessible.map((i) => ({ collectionId: input.id, itemId: i.id }))
+          );
+      }
     }
   }
 
@@ -433,12 +590,173 @@ export const updateCollection = async (
       .where(eq(spellSchoolsCollections.collectionId, input.id));
 
     if (input.spellSchoolIds.length > 0) {
-      await db.insert(spellSchoolsCollections).values(
-        input.spellSchoolIds.map((spellSchoolId) => ({
-          collectionId: input.id,
-          spellSchoolId,
-        }))
-      );
+      const accessible = await db
+        .select({ id: spellSchools.id })
+        .from(spellSchools)
+        .where(
+          and(
+            inArray(spellSchools.id, input.spellSchoolIds),
+            or(
+              eq(spellSchools.visibility, "public"),
+              eq(spellSchools.userId, user.id)
+            )
+          )
+        );
+      if (accessible.length > 0) {
+        await db.insert(spellSchoolsCollections).values(
+          accessible.map((s) => ({
+            collectionId: input.id,
+            spellSchoolId: s.id,
+          }))
+        );
+      }
+    }
+  }
+
+  // Sync companions
+  if (input.companionIds) {
+    await db
+      .delete(companionsCollections)
+      .where(eq(companionsCollections.collectionId, input.id));
+
+    if (input.companionIds.length > 0) {
+      const accessible = await db
+        .select({ id: companions.id })
+        .from(companions)
+        .where(
+          and(
+            inArray(companions.id, input.companionIds),
+            or(
+              eq(companions.visibility, "public"),
+              eq(companions.userId, user.id)
+            )
+          )
+        );
+      if (accessible.length > 0) {
+        await db.insert(companionsCollections).values(
+          accessible.map((c) => ({
+            collectionId: input.id,
+            companionId: c.id,
+          }))
+        );
+      }
+    }
+  }
+
+  // Sync ancestries
+  if (input.ancestryIds) {
+    await db
+      .delete(ancestriesCollections)
+      .where(eq(ancestriesCollections.collectionId, input.id));
+
+    if (input.ancestryIds.length > 0) {
+      const accessible = await db
+        .select({ id: ancestries.id })
+        .from(ancestries)
+        .where(
+          and(
+            inArray(ancestries.id, input.ancestryIds),
+            or(
+              eq(ancestries.visibility, "public"),
+              eq(ancestries.userId, user.id)
+            )
+          )
+        );
+      if (accessible.length > 0) {
+        await db.insert(ancestriesCollections).values(
+          accessible.map((a) => ({
+            collectionId: input.id,
+            ancestryId: a.id,
+          }))
+        );
+      }
+    }
+  }
+
+  // Sync backgrounds
+  if (input.backgroundIds) {
+    await db
+      .delete(backgroundsCollections)
+      .where(eq(backgroundsCollections.collectionId, input.id));
+
+    if (input.backgroundIds.length > 0) {
+      const accessible = await db
+        .select({ id: backgrounds.id })
+        .from(backgrounds)
+        .where(
+          and(
+            inArray(backgrounds.id, input.backgroundIds),
+            or(
+              eq(backgrounds.visibility, "public"),
+              eq(backgrounds.userId, user.id)
+            )
+          )
+        );
+      if (accessible.length > 0) {
+        await db.insert(backgroundsCollections).values(
+          accessible.map((b) => ({
+            collectionId: input.id,
+            backgroundId: b.id,
+          }))
+        );
+      }
+    }
+  }
+
+  // Sync subclasses
+  if (input.subclassIds) {
+    await db
+      .delete(subclassesCollections)
+      .where(eq(subclassesCollections.collectionId, input.id));
+
+    if (input.subclassIds.length > 0) {
+      const accessible = await db
+        .select({ id: subclasses.id })
+        .from(subclasses)
+        .where(
+          and(
+            inArray(subclasses.id, input.subclassIds),
+            or(
+              eq(subclasses.visibility, "public"),
+              eq(subclasses.userId, user.id)
+            )
+          )
+        );
+      if (accessible.length > 0) {
+        await db.insert(subclassesCollections).values(
+          accessible.map((s) => ({
+            collectionId: input.id,
+            subclassId: s.id,
+          }))
+        );
+      }
+    }
+  }
+
+  // Sync classes
+  if (input.classIds) {
+    await db
+      .delete(classesCollections)
+      .where(eq(classesCollections.collectionId, input.id));
+
+    if (input.classIds.length > 0) {
+      const accessible = await db
+        .select({ id: classes.id })
+        .from(classes)
+        .where(
+          and(
+            inArray(classes.id, input.classIds),
+            or(eq(classes.visibility, "public"), eq(classes.userId, user.id))
+          )
+        );
+      if (accessible.length > 0) {
+        await db.insert(classesCollections).values(
+          accessible.map((c) => ({
+            collectionId: input.id,
+            classId: c.id,
+          }))
+        );
+      }
     }
   }
 
@@ -642,6 +960,131 @@ export const addSpellSchoolToCollection = async (input: {
   }
 };
 
+export const addCompanionToCollection = async (input: {
+  companionId: string;
+  collectionId: string;
+}): Promise<void> => {
+  const db = getDatabase();
+
+  const existing = await db
+    .select()
+    .from(companionsCollections)
+    .where(
+      and(
+        eq(companionsCollections.collectionId, input.collectionId),
+        eq(companionsCollections.companionId, input.companionId)
+      )
+    )
+    .limit(1);
+
+  if (existing.length === 0) {
+    await db.insert(companionsCollections).values({
+      collectionId: input.collectionId,
+      companionId: input.companionId,
+    });
+  }
+};
+
+export const addAncestryToCollection = async (input: {
+  ancestryId: string;
+  collectionId: string;
+}): Promise<void> => {
+  const db = getDatabase();
+
+  const existing = await db
+    .select()
+    .from(ancestriesCollections)
+    .where(
+      and(
+        eq(ancestriesCollections.collectionId, input.collectionId),
+        eq(ancestriesCollections.ancestryId, input.ancestryId)
+      )
+    )
+    .limit(1);
+
+  if (existing.length === 0) {
+    await db.insert(ancestriesCollections).values({
+      collectionId: input.collectionId,
+      ancestryId: input.ancestryId,
+    });
+  }
+};
+
+export const addBackgroundToCollection = async (input: {
+  backgroundId: string;
+  collectionId: string;
+}): Promise<void> => {
+  const db = getDatabase();
+
+  const existing = await db
+    .select()
+    .from(backgroundsCollections)
+    .where(
+      and(
+        eq(backgroundsCollections.collectionId, input.collectionId),
+        eq(backgroundsCollections.backgroundId, input.backgroundId)
+      )
+    )
+    .limit(1);
+
+  if (existing.length === 0) {
+    await db.insert(backgroundsCollections).values({
+      collectionId: input.collectionId,
+      backgroundId: input.backgroundId,
+    });
+  }
+};
+
+export const addSubclassToCollection = async (input: {
+  subclassId: string;
+  collectionId: string;
+}): Promise<void> => {
+  const db = getDatabase();
+
+  const existing = await db
+    .select()
+    .from(subclassesCollections)
+    .where(
+      and(
+        eq(subclassesCollections.collectionId, input.collectionId),
+        eq(subclassesCollections.subclassId, input.subclassId)
+      )
+    )
+    .limit(1);
+
+  if (existing.length === 0) {
+    await db.insert(subclassesCollections).values({
+      collectionId: input.collectionId,
+      subclassId: input.subclassId,
+    });
+  }
+};
+
+export const addClassToCollection = async (input: {
+  classId: string;
+  collectionId: string;
+}): Promise<void> => {
+  const db = getDatabase();
+
+  const existing = await db
+    .select()
+    .from(classesCollections)
+    .where(
+      and(
+        eq(classesCollections.collectionId, input.collectionId),
+        eq(classesCollections.classId, input.classId)
+      )
+    )
+    .limit(1);
+
+  if (existing.length === 0) {
+    await db.insert(classesCollections).values({
+      collectionId: input.collectionId,
+      classId: input.classId,
+    });
+  }
+};
+
 export const listPublicCollectionsHavingMonstersForUser = async (
   creatorId: string
 ): Promise<CollectionOverview[]> => {
@@ -727,30 +1170,89 @@ async function loadCollectionOverview(
   collection: CollectionRow,
   creator: UserRow
 ): Promise<CollectionOverview> {
-  const monsterLinks = await db
-    .select({ monster: monsters })
-    .from(monstersCollections)
-    .innerJoin(monsters, eq(monstersCollections.monsterId, monsters.id))
-    .where(eq(monstersCollections.collectionId, collection.id));
-
-  const itemLinks = await db
-    .select({ item: items })
-    .from(itemsCollections)
-    .innerJoin(items, eq(itemsCollections.itemId, items.id))
-    .where(eq(itemsCollections.collectionId, collection.id));
-
-  const schoolLinks = await db
-    .select({ school: spellSchools })
-    .from(spellSchoolsCollections)
-    .innerJoin(
-      spellSchools,
-      eq(spellSchoolsCollections.spellSchoolId, spellSchools.id)
-    )
-    .where(eq(spellSchoolsCollections.collectionId, collection.id));
+  const [
+    monsterLinks,
+    itemLinks,
+    schoolLinks,
+    companionLinks,
+    ancestryLinks,
+    backgroundLinks,
+    subclassLinks,
+    classLinks,
+  ] = await Promise.all([
+    db
+      .select({ monster: monsters })
+      .from(monstersCollections)
+      .innerJoin(monsters, eq(monstersCollections.monsterId, monsters.id))
+      .where(eq(monstersCollections.collectionId, collection.id)),
+    db
+      .select({ item: items })
+      .from(itemsCollections)
+      .innerJoin(items, eq(itemsCollections.itemId, items.id))
+      .where(eq(itemsCollections.collectionId, collection.id)),
+    db
+      .select({ school: spellSchools })
+      .from(spellSchoolsCollections)
+      .innerJoin(
+        spellSchools,
+        eq(spellSchoolsCollections.spellSchoolId, spellSchools.id)
+      )
+      .where(eq(spellSchoolsCollections.collectionId, collection.id)),
+    db
+      .select({ companion: companions })
+      .from(companionsCollections)
+      .innerJoin(
+        companions,
+        eq(companionsCollections.companionId, companions.id)
+      )
+      .where(eq(companionsCollections.collectionId, collection.id)),
+    db
+      .select({ ancestry: ancestries })
+      .from(ancestriesCollections)
+      .innerJoin(
+        ancestries,
+        eq(ancestriesCollections.ancestryId, ancestries.id)
+      )
+      .where(eq(ancestriesCollections.collectionId, collection.id)),
+    db
+      .select({ background: backgrounds })
+      .from(backgroundsCollections)
+      .innerJoin(
+        backgrounds,
+        eq(backgroundsCollections.backgroundId, backgrounds.id)
+      )
+      .where(eq(backgroundsCollections.collectionId, collection.id)),
+    db
+      .select({ subclass: subclasses })
+      .from(subclassesCollections)
+      .innerJoin(
+        subclasses,
+        eq(subclassesCollections.subclassId, subclasses.id)
+      )
+      .where(eq(subclassesCollections.collectionId, collection.id)),
+    db
+      .select({ class: classes })
+      .from(classesCollections)
+      .innerJoin(classes, eq(classesCollections.classId, classes.id))
+      .where(eq(classesCollections.collectionId, collection.id)),
+  ]);
 
   const collectionMonsters = monsterLinks.map((l) => l.monster);
   const collectionItems = itemLinks.map((l) => l.item);
   const collectionSchools = schoolLinks.map((l) => l.school);
+
+  const overviewSchoolIds = collectionSchools.map((s) => s.id);
+  const overviewSpellCountMap = new Map<string, number>();
+  if (overviewSchoolIds.length > 0) {
+    const spellCounts = await db
+      .select({ schoolId: spells.schoolId, count: count() })
+      .from(spells)
+      .where(inArray(spells.schoolId, overviewSchoolIds))
+      .groupBy(spells.schoolId);
+    for (const row of spellCounts) {
+      overviewSpellCountMap.set(row.schoolId, row.count);
+    }
+  }
 
   const legendaryCount = collectionMonsters.filter((m) => m.legendary).length;
   const standardCount = collectionMonsters.filter(
@@ -766,7 +1268,15 @@ async function loadCollectionOverview(
     monsters: collectionMonsters.map(toMonsterMini),
     items: collectionItems.map(toItemMini),
     itemCount: collectionItems.length,
-    spellSchools: collectionSchools.map(toSpellSchoolMini),
+    companions: companionLinks.map((l) => toCompanionMini(l.companion)),
+    ancestries: ancestryLinks.map((l) => toAncestryMini(l.ancestry)),
+    backgrounds: backgroundLinks.map((l) => toBackgroundMini(l.background)),
+    subclasses: subclassLinks.map((l) => toSubclassMini(l.subclass)),
+    classes: classLinks.map((l) => toClassMini(l.class)),
+    spellSchools: collectionSchools.map((s) => ({
+      ...toSpellSchoolMini(s),
+      spellCount: overviewSpellCountMap.get(s.id),
+    })),
     legendaryCount,
     standardCount,
     createdAt: collection.createdAt
@@ -781,27 +1291,69 @@ async function loadCollectionFull(
   collection: CollectionRow,
   creator: UserRow
 ): Promise<Collection> {
-  const monsterLinks = await db
-    .select({ monsterId: monstersCollections.monsterId })
-    .from(monstersCollections)
-    .where(eq(monstersCollections.collectionId, collection.id));
+  const [
+    monsterLinks,
+    itemLinks,
+    schoolLinks,
+    companionLinks,
+    ancestryLinks,
+    backgroundLinks,
+    subclassLinks,
+    classLinks,
+  ] = await Promise.all([
+    db
+      .select({ monsterId: monstersCollections.monsterId })
+      .from(monstersCollections)
+      .where(eq(monstersCollections.collectionId, collection.id)),
+    db
+      .select({ itemId: itemsCollections.itemId })
+      .from(itemsCollections)
+      .where(eq(itemsCollections.collectionId, collection.id)),
+    db
+      .select({ schoolId: spellSchoolsCollections.spellSchoolId })
+      .from(spellSchoolsCollections)
+      .where(eq(spellSchoolsCollections.collectionId, collection.id)),
+    db
+      .select({ companionId: companionsCollections.companionId })
+      .from(companionsCollections)
+      .where(eq(companionsCollections.collectionId, collection.id)),
+    db
+      .select({ ancestryId: ancestriesCollections.ancestryId })
+      .from(ancestriesCollections)
+      .where(eq(ancestriesCollections.collectionId, collection.id)),
+    db
+      .select({ backgroundId: backgroundsCollections.backgroundId })
+      .from(backgroundsCollections)
+      .where(eq(backgroundsCollections.collectionId, collection.id)),
+    db
+      .select({ subclassId: subclassesCollections.subclassId })
+      .from(subclassesCollections)
+      .where(eq(subclassesCollections.collectionId, collection.id)),
+    db
+      .select({ classId: classesCollections.classId })
+      .from(classesCollections)
+      .where(eq(classesCollections.collectionId, collection.id)),
+  ]);
 
-  const itemLinks = await db
-    .select({ itemId: itemsCollections.itemId })
-    .from(itemsCollections)
-    .where(eq(itemsCollections.collectionId, collection.id));
-
-  const schoolLinks = await db
-    .select({ schoolId: spellSchoolsCollections.spellSchoolId })
-    .from(spellSchoolsCollections)
-    .where(eq(spellSchoolsCollections.collectionId, collection.id));
-
-  const monsterIds = monsterLinks.map((l) => l.monsterId);
-  const itemIds = itemLinks.map((l) => l.itemId);
-  const schoolIds = schoolLinks.map((l) => l.schoolId);
-  const collectionMonsters = await findMonstersByIds(monsterIds);
-  const collectionItems = await findItemsByIds(itemIds);
-  const collectionSchools = await findSpellSchoolsByIds(schoolIds);
+  const [
+    collectionMonsters,
+    collectionItems,
+    collectionSchools,
+    collectionCompanions,
+    collectionAncestries,
+    collectionBackgrounds,
+    collectionSubclasses,
+    collectionClasses,
+  ] = await Promise.all([
+    findMonstersByIds(monsterLinks.map((l) => l.monsterId)),
+    findItemsByIds(itemLinks.map((l) => l.itemId)),
+    findSpellSchoolsByIds(schoolLinks.map((l) => l.schoolId)),
+    findCompanionsByIds(companionLinks.map((l) => l.companionId)),
+    findAncestriesByIds(ancestryLinks.map((l) => l.ancestryId)),
+    findBackgroundsByIds(backgroundLinks.map((l) => l.backgroundId)),
+    findSubclassesByIds(subclassLinks.map((l) => l.subclassId)),
+    findClassesByIds(classLinks.map((l) => l.classId)),
+  ]);
 
   const legendaryCount = collectionMonsters.filter((m) => m.legendary).length;
   const standardCount = collectionMonsters.filter(
@@ -817,6 +1369,11 @@ async function loadCollectionFull(
     monsters: collectionMonsters,
     items: collectionItems,
     itemCount: collectionItems.length,
+    companions: collectionCompanions,
+    ancestries: collectionAncestries,
+    backgrounds: collectionBackgrounds,
+    subclasses: collectionSubclasses,
+    classes: collectionClasses,
     spellSchools: collectionSchools,
     legendaryCount,
     standardCount,

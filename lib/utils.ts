@@ -1,5 +1,7 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { StatType } from "./types";
+import { STAT_TYPES } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -28,6 +30,10 @@ export function monstersSortedByLevelInt<T extends { levelInt: number }>(
   return monsters?.slice().sort((a, b) => a.levelInt - b.levelInt);
 }
 
+export function itemsSortedByName<T extends { name: string }>(items: T[]): T[] {
+  return items?.slice().sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export function getRarityColor(rarity: string): string {
   switch (rarity) {
     case "common":
@@ -43,6 +49,35 @@ export function getRarityColor(rarity: string): string {
     default:
       return "bg-gray-100 text-gray-600";
   }
+}
+
+export function formatSaves(saves: Record<StatType, number>): string {
+  return STAT_TYPES.filter((s) => saves[s] !== 0)
+    .map(
+      (s) =>
+        `${s}${saves[s] > 0 ? "+".repeat(saves[s]) : "-".repeat(-saves[s])}`
+    )
+    .join(", ");
+}
+
+/**
+ * Generate a UUID that works in non-secure contexts (plain HTTP).
+ * crypto.randomUUID() requires a secure context (HTTPS or localhost),
+ * so this provides a Math.random fallback for dev environments.
+ * Always use this instead of crypto.randomUUID() in client components.
+ */
+export function randomUUID(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 type Curry<P extends unknown[], R> = <T extends unknown[]>(

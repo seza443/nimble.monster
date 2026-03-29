@@ -1,9 +1,21 @@
 "use server";
 
+import { and, eq, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { forbidden, unauthorized } from "next/navigation";
 import { auth } from "@/lib/auth";
 import * as db from "@/lib/db";
+import { getDatabase } from "@/lib/db/drizzle";
+import {
+  ancestries,
+  backgrounds,
+  classes,
+  companions,
+  items,
+  monsters,
+  spellSchools,
+  subclasses,
+} from "@/lib/db/schema";
 import type { CollectionOverview, CollectionVisibilityType } from "@/lib/types";
 
 export async function deleteCollection(collectionId: string) {
@@ -27,8 +39,6 @@ export async function deleteCollection(collectionId: string) {
       error: "Could not delete the collection. Please try again.",
     };
   } catch (error) {
-    console.error("Error deleting collection:", error);
-
     // Handle specific database errors
     const errorMessage = error instanceof Error ? error.message : "";
 
@@ -71,7 +81,6 @@ export async function createCollection(formData: {
 
     return { success: true, collection: collection as CollectionOverview };
   } catch (error) {
-    console.error("Error creating collection:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error occurred",
@@ -113,7 +122,6 @@ export async function updateCollection(
 
     return { success: true, collection };
   } catch (error) {
-    console.error("Error updating collection:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error occurred",
@@ -159,6 +167,24 @@ export async function addMonsterToCollection(formData: FormData) {
     return forbidden();
   }
 
+  const entityDb = getDatabase();
+  const accessible = await entityDb
+    .select({ id: monsters.id })
+    .from(monsters)
+    .where(
+      and(
+        eq(monsters.id, monsterId),
+        or(
+          eq(monsters.visibility, "public"),
+          eq(monsters.userId, session.user.id)
+        )
+      )
+    )
+    .limit(1);
+  if (accessible.length === 0) {
+    return forbidden();
+  }
+
   await db.addMonsterToCollection({ monsterId, collectionId });
   return { success: true };
 }
@@ -186,7 +212,22 @@ export async function addItemToCollection(formData: FormData) {
     };
   }
 
-  if (collection.creator.id !== session.user.id) {
+  if (collection.creator.discordId !== session.user.discordId) {
+    return forbidden();
+  }
+
+  const entityDb = getDatabase();
+  const accessible = await entityDb
+    .select({ id: items.id })
+    .from(items)
+    .where(
+      and(
+        eq(items.id, itemId),
+        or(eq(items.visibility, "public"), eq(items.userId, session.user.id))
+      )
+    )
+    .limit(1);
+  if (accessible.length === 0) {
     return forbidden();
   }
 
@@ -217,10 +258,273 @@ export async function addSpellSchoolToCollection(formData: FormData) {
     };
   }
 
-  if (collection.creator.id !== session.user.id) {
+  if (collection.creator.discordId !== session.user.discordId) {
+    return forbidden();
+  }
+
+  const entityDb = getDatabase();
+  const accessible = await entityDb
+    .select({ id: spellSchools.id })
+    .from(spellSchools)
+    .where(
+      and(
+        eq(spellSchools.id, spellSchoolId),
+        or(
+          eq(spellSchools.visibility, "public"),
+          eq(spellSchools.userId, session.user.id)
+        )
+      )
+    )
+    .limit(1);
+  if (accessible.length === 0) {
     return forbidden();
   }
 
   await db.addSpellSchoolToCollection({ spellSchoolId, collectionId });
+  return { success: true };
+}
+
+export async function addCompanionToCollection(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  const companionId = formData.get("companionId")?.toString();
+  const collectionId = formData.get("collectionId")?.toString();
+  if (!companionId || !collectionId) {
+    return { success: false, error: "Missing companionId or collectionId" };
+  }
+
+  const collection = await db.getCollection(
+    collectionId,
+    session.user.discordId
+  );
+  if (!collection) {
+    return {
+      success: false,
+      error: "Collection not found or you don't have permission to update it",
+    };
+  }
+
+  if (collection.creator.discordId !== session.user.discordId) {
+    return forbidden();
+  }
+
+  const entityDb = getDatabase();
+  const accessible = await entityDb
+    .select({ id: companions.id })
+    .from(companions)
+    .where(
+      and(
+        eq(companions.id, companionId),
+        or(
+          eq(companions.visibility, "public"),
+          eq(companions.userId, session.user.id)
+        )
+      )
+    )
+    .limit(1);
+  if (accessible.length === 0) {
+    return forbidden();
+  }
+
+  await db.addCompanionToCollection({ companionId, collectionId });
+  return { success: true };
+}
+
+export async function addAncestryToCollection(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  const ancestryId = formData.get("ancestryId")?.toString();
+  const collectionId = formData.get("collectionId")?.toString();
+  if (!ancestryId || !collectionId) {
+    return { success: false, error: "Missing ancestryId or collectionId" };
+  }
+
+  const collection = await db.getCollection(
+    collectionId,
+    session.user.discordId
+  );
+  if (!collection) {
+    return {
+      success: false,
+      error: "Collection not found or you don't have permission to update it",
+    };
+  }
+
+  if (collection.creator.discordId !== session.user.discordId) {
+    return forbidden();
+  }
+
+  const entityDb = getDatabase();
+  const accessible = await entityDb
+    .select({ id: ancestries.id })
+    .from(ancestries)
+    .where(
+      and(
+        eq(ancestries.id, ancestryId),
+        or(
+          eq(ancestries.visibility, "public"),
+          eq(ancestries.userId, session.user.id)
+        )
+      )
+    )
+    .limit(1);
+  if (accessible.length === 0) {
+    return forbidden();
+  }
+
+  await db.addAncestryToCollection({ ancestryId, collectionId });
+  return { success: true };
+}
+
+export async function addBackgroundToCollection(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  const backgroundId = formData.get("backgroundId")?.toString();
+  const collectionId = formData.get("collectionId")?.toString();
+  if (!backgroundId || !collectionId) {
+    return { success: false, error: "Missing backgroundId or collectionId" };
+  }
+
+  const collection = await db.getCollection(
+    collectionId,
+    session.user.discordId
+  );
+  if (!collection) {
+    return {
+      success: false,
+      error: "Collection not found or you don't have permission to update it",
+    };
+  }
+
+  if (collection.creator.discordId !== session.user.discordId) {
+    return forbidden();
+  }
+
+  const entityDb = getDatabase();
+  const accessible = await entityDb
+    .select({ id: backgrounds.id })
+    .from(backgrounds)
+    .where(
+      and(
+        eq(backgrounds.id, backgroundId),
+        or(
+          eq(backgrounds.visibility, "public"),
+          eq(backgrounds.userId, session.user.id)
+        )
+      )
+    )
+    .limit(1);
+  if (accessible.length === 0) {
+    return forbidden();
+  }
+
+  await db.addBackgroundToCollection({ backgroundId, collectionId });
+  return { success: true };
+}
+
+export async function addSubclassToCollection(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  const subclassId = formData.get("subclassId")?.toString();
+  const collectionId = formData.get("collectionId")?.toString();
+  if (!subclassId || !collectionId) {
+    return { success: false, error: "Missing subclassId or collectionId" };
+  }
+
+  const collection = await db.getCollection(
+    collectionId,
+    session.user.discordId
+  );
+  if (!collection) {
+    return {
+      success: false,
+      error: "Collection not found or you don't have permission to update it",
+    };
+  }
+
+  if (collection.creator.discordId !== session.user.discordId) {
+    return forbidden();
+  }
+
+  const entityDb = getDatabase();
+  const accessible = await entityDb
+    .select({ id: subclasses.id })
+    .from(subclasses)
+    .where(
+      and(
+        eq(subclasses.id, subclassId),
+        or(
+          eq(subclasses.visibility, "public"),
+          eq(subclasses.userId, session.user.id)
+        )
+      )
+    )
+    .limit(1);
+  if (accessible.length === 0) {
+    return forbidden();
+  }
+
+  await db.addSubclassToCollection({ subclassId, collectionId });
+  return { success: true };
+}
+
+export async function addClassToCollection(formData: FormData) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return unauthorized();
+  }
+
+  const classId = formData.get("classId")?.toString();
+  const collectionId = formData.get("collectionId")?.toString();
+  if (!classId || !collectionId) {
+    return { success: false, error: "Missing classId or collectionId" };
+  }
+
+  const collection = await db.getCollection(
+    collectionId,
+    session.user.discordId
+  );
+  if (!collection) {
+    return {
+      success: false,
+      error: "Collection not found or you don't have permission to update it",
+    };
+  }
+
+  if (collection.creator.discordId !== session.user.discordId) {
+    return forbidden();
+  }
+
+  const entityDb = getDatabase();
+  const accessible = await entityDb
+    .select({ id: classes.id })
+    .from(classes)
+    .where(
+      and(
+        eq(classes.id, classId),
+        or(
+          eq(classes.visibility, "public"),
+          eq(classes.userId, session.user.id)
+        )
+      )
+    )
+    .limit(1);
+  if (accessible.length === 0) {
+    return forbidden();
+  }
+
+  await db.addClassToCollection({ classId, collectionId });
   return { success: true };
 }

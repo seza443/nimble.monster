@@ -3,6 +3,7 @@
 BIN := node_modules/.bin
 
 setup: node_modules db/dev.db sync-icons
+	DATABASE_URL=file:db/dev.db pnpm run db:migrate
 	@echo "Setup complete"
 
 node_modules: package.json pnpm-lock.yaml
@@ -12,21 +13,24 @@ node_modules: package.json pnpm-lock.yaml
 db:
 	mkdir -p db
 
+TURSO := $(shell command -v turso 2>/dev/null || echo ~/.turso/turso)
+
 db/dev.db: | db node_modules
-	@if command -v turso >/dev/null && turso db list 2>/dev/null | grep -q nexus-production; then \
+	@if $(TURSO) db list 2>/dev/null | grep -q nexus-production; then \
 		echo "Exporting production database..."; \
-		turso db export nexus-production --output-file db/dev.db; \
+		rm -f db/dev.db db/dev.db-shm db/dev.db-wal; \
+		$(TURSO) db export nexus-production --output-file db/dev.db; \
 	else \
 		echo "Creating empty database..."; \
-		$(BIN)/drizzle-kit push; \
+		DATABASE_URL=file:db/dev.db $(BIN)/drizzle-kit migrate; \
 	fi
 
 sync-icons: components/game-icons/index.ts
 
-assets/game-icons: | assets
-	git clone https://github.com/game-icons/icons.git assets/game-icons
+assets/game-icons:
+	git submodule update --init assets/game-icons
 
-components/game-icons/index.ts: assets/game-icons
+components/game-icons/index.ts: | assets/game-icons
 	node tools/sync-icons.js
 
 sync-paperforge:

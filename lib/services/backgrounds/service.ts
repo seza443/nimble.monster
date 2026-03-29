@@ -20,7 +20,7 @@ const PaginateBackgroundsSchema = z.object({
   limit: z.number().min(1).max(100).default(10),
   cursor: z.string().optional(),
   creatorId: z.string().optional(),
-  sourceId: z.string().optional(),
+  source: z.string().optional(),
 });
 
 export type PaginateBackgroundsParams = z.infer<
@@ -38,10 +38,14 @@ export class BackgroundsService {
   }
 
   async paginatePublicBackgrounds(
-    params: PaginateBackgroundsParams
+    params: PaginateBackgroundsParams,
+    officialOnly?: boolean
   ): Promise<PaginatePublicBackgroundsResponse> {
     const parsedParams = PaginateBackgroundsSchema.parse(params);
-    return repository.paginatePublicBackgrounds(parsedParams);
+    return repository.paginatePublicBackgrounds({
+      ...parsedParams,
+      officialOnly,
+    });
   }
 
   async searchBackgrounds(

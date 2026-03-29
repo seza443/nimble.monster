@@ -1,10 +1,12 @@
 import { and, asc, desc, eq, inArray, like, or } from "drizzle-orm";
+import { OFFICIAL_USER_ID } from "@/lib/services/monsters/official";
 import type {
   Award,
+  ClassAbilityItem,
+  ClassAbilityList,
   Source,
   Subclass,
   SubclassAbility,
-  SubclassClass,
   SubclassLevel,
   SubclassMini,
   User,
@@ -14,6 +16,10 @@ import { getDatabase } from "./drizzle";
 import {
   type AwardRow,
   awards,
+  type ClassAbilityItemRow,
+  type ClassAbilityListRow,
+  classAbilityItems,
+  classAbilityLists,
   type SourceRow,
   type SubclassAbilityRow,
   type SubclassRow,
@@ -21,6 +27,7 @@ import {
   subclassAbilities,
   subclasses,
   subclassesAwards,
+  subclassesClassAbilityLists,
   type UserRow,
   users,
 } from "./schema";
@@ -66,7 +73,8 @@ const toAward = (a: AwardRow): Award => ({
 const toSubclassMini = (s: SubclassRow): SubclassMini => ({
   id: s.id,
   name: s.name,
-  className: s.className as SubclassClass,
+  classId: s.classId || undefined,
+  className: s.className,
   namePreface: s.namePreface || undefined,
   tagline: s.tagline || undefined,
   visibility: s.visibility as "public" | "private",
@@ -79,6 +87,11 @@ interface SubclassFullData {
   source: SourceRow | null;
   abilities: SubclassAbilityRow[];
   awards: AwardRow[];
+  abilityLists: Array<{
+    list: ClassAbilityListRow;
+    creator: UserRow;
+    items: ClassAbilityItemRow[];
+  }>;
 }
 
 const toSubclass = (data: SubclassFullData): Subclass => {
@@ -106,10 +119,28 @@ const toSubclass = (data: SubclassFullData): Subclass => {
     }))
     .sort((a, b) => a.level - b.level);
 
+  const abilityLists: ClassAbilityList[] = data.abilityLists.map((al) => ({
+    id: al.list.id,
+    name: al.list.name,
+    description: al.list.description,
+    characterClass: al.list.characterClass || undefined,
+    creator: toUser(al.creator),
+    createdAt: al.list.createdAt ? new Date(al.list.createdAt) : new Date(),
+    updatedAt: al.list.updatedAt ? new Date(al.list.updatedAt) : new Date(),
+    items: al.items.map(
+      (item): ClassAbilityItem => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+      })
+    ),
+  }));
+
   return {
     ...toSubclassMini(data.subclass),
     description: data.subclass.description || undefined,
     levels,
+    abilityLists,
     creator: toUser(data.creator),
     source: toSource(data.source),
     awards: data.awards.length > 0 ? data.awards.map(toAward) : undefined,
@@ -144,6 +175,48 @@ async function loadSubclassFullData(
     .innerJoin(awards, eq(subclassesAwards.awardId, awards.id))
     .where(inArray(subclassesAwards.subclassId, subclassIds));
 
+  // Load ability list links
+  const linkRows = await db
+    .select()
+    .from(subclassesClassAbilityLists)
+    .where(inArray(subclassesClassAbilityLists.subclassId, subclassIds))
+    .orderBy(asc(subclassesClassAbilityLists.orderIndex));
+
+  const listIds = [...new Set(linkRows.map((l) => l.abilityListId))];
+
+  const listDataMap = new Map<
+    string,
+    { list: ClassAbilityListRow; creator: UserRow }
+  >();
+  const itemsByList = new Map<string, ClassAbilityItemRow[]>();
+
+  if (listIds.length > 0) {
+    const listRows = await db
+      .select()
+      .from(classAbilityLists)
+      .innerJoin(users, eq(classAbilityLists.userId, users.id))
+      .where(inArray(classAbilityLists.id, listIds));
+
+    for (const row of listRows) {
+      listDataMap.set(row.class_ability_lists.id, {
+        list: row.class_ability_lists,
+        creator: row.users,
+      });
+    }
+
+    const itemRows = await db
+      .select()
+      .from(classAbilityItems)
+      .where(inArray(classAbilityItems.classAbilityListId, listIds))
+      .orderBy(asc(classAbilityItems.orderIndex));
+
+    for (const item of itemRows) {
+      const existing = itemsByList.get(item.classAbilityListId) || [];
+      existing.push(item);
+      itemsByList.set(item.classAbilityListId, existing);
+    }
+  }
+
   const abilitiesBySubclass = new Map<string, SubclassAbilityRow[]>();
   for (const ability of abilityRows) {
     const existing = abilitiesBySubclass.get(ability.subclassId) || [];
@@ -158,6 +231,26 @@ async function loadSubclassFullData(
     awardsBySubclass.set(row.subclassId, existing);
   }
 
+  // Group ability list links by subclass
+  const listLinksBySubclass = new Map<
+    string,
+    Array<{
+      list: ClassAbilityListRow;
+      creator: UserRow;
+      items: ClassAbilityItemRow[];
+    }>
+  >();
+  for (const link of linkRows) {
+    const listData = listDataMap.get(link.abilityListId);
+    if (!listData) continue;
+    const existing = listLinksBySubclass.get(link.subclassId) || [];
+    existing.push({
+      ...listData,
+      items: itemsByList.get(link.abilityListId) || [],
+    });
+    listLinksBySubclass.set(link.subclassId, existing);
+  }
+
   const result = new Map<string, SubclassFullData>();
   for (const row of subclassRows) {
     result.set(row.subclasses.id, {
@@ -166,6 +259,7 @@ async function loadSubclassFullData(
       source: row.sources,
       abilities: abilitiesBySubclass.get(row.subclasses.id) || [],
       awards: awardsBySubclass.get(row.subclasses.id) || [],
+      abilityLists: listLinksBySubclass.get(row.subclasses.id) || [],
     });
   }
 
@@ -197,13 +291,19 @@ export const deleteSubclass = async (input: {
   return result.rowsAffected > 0;
 };
 
-export const listPublicSubclasses = async (): Promise<Subclass[]> => {
+export const listPublicSubclasses = async (
+  officialOnly = false
+): Promise<Subclass[]> => {
   const db = getDatabase();
 
+  const conditions = [eq(subclasses.visibility, "public")];
+  if (officialOnly) {
+    conditions.push(eq(subclasses.userId, OFFICIAL_USER_ID));
+  }
   const subclassRows = await db
     .select({ id: subclasses.id })
     .from(subclasses)
-    .where(eq(subclasses.visibility, "public"))
+    .where(and(...conditions))
     .orderBy(asc(subclasses.name));
 
   if (subclassRows.length === 0) return [];
@@ -215,6 +315,29 @@ export const listPublicSubclasses = async (): Promise<Subclass[]> => {
     .map((id) => dataMap.get(id))
     .filter((d): d is SubclassFullData => d !== undefined)
     .map(toSubclass);
+};
+
+export const listSubclassMinisForClass = async (
+  className: string
+): Promise<(SubclassMini & { creator: User })[]> => {
+  const db = getDatabase();
+
+  const rows = await db
+    .select()
+    .from(subclasses)
+    .innerJoin(users, eq(subclasses.userId, users.id))
+    .where(
+      and(
+        eq(subclasses.className, className),
+        eq(subclasses.visibility, "public")
+      )
+    )
+    .orderBy(asc(subclasses.name));
+
+  return rows.map((r) => ({
+    ...toSubclassMini(r.subclasses),
+    creator: toUser(r.users),
+  }));
 };
 
 export const listSubclassMinis = async (): Promise<SubclassMini[]> => {
@@ -338,12 +461,19 @@ export const listAllSubclassesForDiscordID = async (
 
 export interface CreateSubclassInput {
   name: string;
-  className: SubclassClass;
+  classId?: string | null;
+  className: string;
   namePreface?: string;
   tagline?: string;
   description?: string;
   visibility: "public" | "private";
   levels: SubclassLevel[];
+  abilityListIds?: string[];
+  abilityLists?: Array<{
+    name: string;
+    description: string;
+    items: Array<{ name: string; description: string }>;
+  }>;
   discordId: string;
   sourceId?: string;
 }
@@ -368,6 +498,7 @@ export const createSubclass = async (
   await db.insert(subclasses).values({
     id: subclassId,
     name: input.name,
+    classId: input.classId || undefined,
     className: input.className,
     namePreface: input.namePreface || undefined,
     tagline: input.tagline || undefined,
@@ -402,6 +533,46 @@ export const createSubclass = async (
 
   if (abilityInserts.length > 0) {
     await db.insert(subclassAbilities).values(abilityInserts);
+  }
+
+  // Insert ability list links for existing lists
+  const abilityListIds = input.abilityListIds || [];
+  if (abilityListIds.length > 0) {
+    await db.insert(subclassesClassAbilityLists).values(
+      abilityListIds.map((listId, index) => ({
+        subclassId,
+        abilityListId: listId,
+        orderIndex: index,
+      }))
+    );
+  }
+
+  // Create inline ability lists
+  const inlineLists = input.abilityLists || [];
+  for (const [index, list] of inlineLists.entries()) {
+    const listId = crypto.randomUUID();
+    await db.insert(classAbilityLists).values({
+      id: listId,
+      name: list.name,
+      description: list.description,
+      userId: userResult[0].id,
+    });
+    if (list.items.length > 0) {
+      await db.insert(classAbilityItems).values(
+        list.items.map((item, itemIndex) => ({
+          id: crypto.randomUUID(),
+          classAbilityListId: listId,
+          name: item.name,
+          description: item.description,
+          orderIndex: itemIndex,
+        }))
+      );
+    }
+    await db.insert(subclassesClassAbilityLists).values({
+      subclassId,
+      abilityListId: listId,
+      orderIndex: abilityListIds.length + index,
+    });
   }
 
   const dataMap = await loadSubclassFullData(db, [subclassId]);
@@ -450,6 +621,7 @@ export const updateSubclass = async (
     .update(subclasses)
     .set({
       name: input.name,
+      classId: input.classId || null,
       className: input.className,
       namePreface: input.namePreface || undefined,
       tagline: input.tagline || undefined,
@@ -489,6 +661,62 @@ export const updateSubclass = async (
 
   if (abilityInserts.length > 0) {
     await db.insert(subclassAbilities).values(abilityInserts);
+  }
+
+  // Delete old inline ability lists (those linked to this subclass)
+  const existingLinks = await db
+    .select({ abilityListId: subclassesClassAbilityLists.abilityListId })
+    .from(subclassesClassAbilityLists)
+    .where(eq(subclassesClassAbilityLists.subclassId, input.id));
+  const existingListIds = existingLinks.map((l) => l.abilityListId);
+  if (existingListIds.length > 0) {
+    await db
+      .delete(classAbilityLists)
+      .where(inArray(classAbilityLists.id, existingListIds));
+  }
+
+  await db
+    .delete(subclassesClassAbilityLists)
+    .where(eq(subclassesClassAbilityLists.subclassId, input.id));
+
+  // Re-link existing ability list IDs
+  const abilityListIds = input.abilityListIds || [];
+  if (abilityListIds.length > 0) {
+    await db.insert(subclassesClassAbilityLists).values(
+      abilityListIds.map((listId, index) => ({
+        subclassId: input.id,
+        abilityListId: listId,
+        orderIndex: index,
+      }))
+    );
+  }
+
+  // Create inline ability lists
+  const inlineLists = input.abilityLists || [];
+  for (const [index, list] of inlineLists.entries()) {
+    const listId = crypto.randomUUID();
+    await db.insert(classAbilityLists).values({
+      id: listId,
+      name: list.name,
+      description: list.description,
+      userId: userResult[0].id,
+    });
+    if (list.items.length > 0) {
+      await db.insert(classAbilityItems).values(
+        list.items.map((item, itemIndex) => ({
+          id: crypto.randomUUID(),
+          classAbilityListId: listId,
+          name: item.name,
+          description: item.description,
+          orderIndex: itemIndex,
+        }))
+      );
+    }
+    await db.insert(subclassesClassAbilityLists).values({
+      subclassId: input.id,
+      abilityListId: listId,
+      orderIndex: abilityListIds.length + index,
+    });
   }
 
   const dataMap = await loadSubclassFullData(db, [input.id]);
@@ -591,4 +819,19 @@ export const findSubclassWithCreatorDiscordId = async (
   const data = dataMap.get(id);
 
   return data ? toSubclass(data) : null;
+};
+
+export const findSubclassesByIds = async (
+  ids: string[]
+): Promise<Subclass[]> => {
+  const validIds = ids.filter(isValidUUID);
+  if (validIds.length === 0) return [];
+
+  const db = getDatabase();
+  const dataMap = await loadSubclassFullData(db, validIds);
+
+  return validIds
+    .map((id) => dataMap.get(id))
+    .filter((d): d is SubclassFullData => d !== undefined)
+    .map(toSubclass);
 };

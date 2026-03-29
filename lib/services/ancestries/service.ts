@@ -20,7 +20,7 @@ const PaginateAncestriesSchema = z.object({
   limit: z.number().min(1).max(100).default(10),
   cursor: z.string().optional(),
   creatorId: z.string().optional(),
-  sourceId: z.string().optional(),
+  source: z.string().optional(),
 });
 
 export type PaginateAncestriesParams = z.infer<typeof PaginateAncestriesSchema>;
@@ -36,10 +36,14 @@ export class AncestriesService {
   }
 
   async paginatePublicAncestries(
-    params: PaginateAncestriesParams
+    params: PaginateAncestriesParams,
+    officialOnly?: boolean
   ): Promise<PaginatePublicAncestriesResponse> {
     const parsedParams = PaginateAncestriesSchema.parse(params);
-    return repository.paginatePublicAncestries(parsedParams);
+    return repository.paginatePublicAncestries({
+      ...parsedParams,
+      officialOnly,
+    });
   }
 
   async searchAncestries(params: SearchAncestriesParams): Promise<Ancestry[]> {

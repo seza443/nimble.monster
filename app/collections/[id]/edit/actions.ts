@@ -11,12 +11,20 @@ import {
 } from "@/lib/types";
 import { getCollectionUrl } from "@/lib/utils/url";
 
+const uuidArray = z.uuid().array();
+
 const collectionSchema = z.object({
   name: z.string().min(1, "Collection name is required"),
   visibility: z.enum(ValidCollectionVisibilities),
   description: z.string().optional(),
-  monsterIds: z.string().array(),
-  itemIds: z.string().array().optional(),
+  monsterIds: uuidArray,
+  itemIds: uuidArray.optional(),
+  companionIds: uuidArray.optional(),
+  ancestryIds: uuidArray.optional(),
+  backgroundIds: uuidArray.optional(),
+  subclassIds: uuidArray.optional(),
+  spellSchoolIds: uuidArray.optional(),
+  classIds: uuidArray.optional(),
 });
 
 export type CollectionFormData = z.infer<typeof collectionSchema>;
@@ -28,13 +36,26 @@ export async function updateCollection(
   const session = await auth();
   if (!session?.user?.id) throw new Error("Unauthorized");
 
-  // Parse form data
+  const safeJsonParse = (value: FormDataEntryValue | null): unknown => {
+    try {
+      return JSON.parse(value?.toString() || "[]");
+    } catch {
+      return [];
+    }
+  };
+
   const parsed = collectionSchema.parse({
     name: formData.get("name"),
     visibility: formData.get("visibility"),
     description: formData.get("description") || "",
-    monsterIds: JSON.parse(formData.get("monsterIds")?.toString() || "[]"),
-    itemIds: JSON.parse(formData.get("itemIds")?.toString() || "[]"),
+    monsterIds: safeJsonParse(formData.get("monsterIds")),
+    itemIds: safeJsonParse(formData.get("itemIds")),
+    companionIds: safeJsonParse(formData.get("companionIds")),
+    ancestryIds: safeJsonParse(formData.get("ancestryIds")),
+    backgroundIds: safeJsonParse(formData.get("backgroundIds")),
+    subclassIds: safeJsonParse(formData.get("subclassIds")),
+    spellSchoolIds: safeJsonParse(formData.get("spellSchoolIds")),
+    classIds: safeJsonParse(formData.get("classIds")),
   });
 
   // Use the new db function to update the collection
@@ -46,6 +67,12 @@ export async function updateCollection(
     discordId: session.user.discordId,
     monsterIds: parsed.monsterIds,
     itemIds: parsed.itemIds,
+    companionIds: parsed.companionIds,
+    ancestryIds: parsed.ancestryIds,
+    backgroundIds: parsed.backgroundIds,
+    subclassIds: parsed.subclassIds,
+    spellSchoolIds: parsed.spellSchoolIds,
+    classIds: parsed.classIds,
   });
 
   if (!updatedCollection) throw new Error("Failed to update collection");

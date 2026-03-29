@@ -34,6 +34,7 @@ export async function createSpellSchool(formData: {
     tier: number;
     actions: number;
     reaction: boolean;
+    utility?: boolean;
     target?: SpellTarget;
     damage?: string;
     description?: string;
@@ -81,6 +82,7 @@ export async function updateSpellSchool(
       tier: number;
       actions: number;
       reaction: boolean;
+      utility?: boolean;
       target?: SpellTarget;
       damage?: string;
       description?: string;
@@ -120,6 +122,10 @@ export async function updateSpellSchool(
       error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
+}
+
+export async function listPublicSpellSchoolsAction() {
+  return db.listPublicSpellSchools();
 }
 
 export async function deleteSpellSchool(spellSchoolId: string) {

@@ -33,9 +33,11 @@ function DiceIcon({
 
 function DiceRollResult({
   result,
+  primaryMod,
   pending,
 }: {
   result: DieResult;
+  primaryMod?: number;
   pending?: boolean;
 }) {
   const [randomValue, setRandomValue] = React.useState(
@@ -57,7 +59,7 @@ function DiceRollResult({
       : result.type === "vicious"
         ? "text-flame"
         : result.type === "dropped"
-          ? "text-muted-foreground"
+          ? "text-neutral-300 dark:text-neutral-600 parchment:text-neutral-400"
           : "";
   if (pending && (result.type === "vicious" || result.type === "explosion")) {
     return null;
@@ -79,6 +81,15 @@ function DiceRollResult({
         )}
       >
         {pending ? randomValue : result.value}
+        {!pending &&
+        result.type === "primary" &&
+        primaryMod &&
+        result.value + primaryMod >= 1 &&
+        result.value + primaryMod <= result.dieSize ? (
+          <span className="ml-1">
+            {primaryMod > 0 ? `+ ${primaryMod}` : `- ${Math.abs(primaryMod)}`}
+          </span>
+        ) : null}
       </span>
     </div>
   );
@@ -89,7 +100,9 @@ interface DiceRollDisplayProps {
   pending?: boolean;
   results: DieResult[];
   modifier: number;
+  primaryMod?: number;
   total: number;
+  hideTotal?: boolean;
 }
 
 export function DiceRollDisplay({
@@ -97,7 +110,9 @@ export function DiceRollDisplay({
   pending,
   results,
   modifier,
+  primaryMod,
   total,
+  hideTotal,
 }: DiceRollDisplayProps) {
   const sortedResults = results
     .map((result, index) => ({ result, index }))
@@ -125,16 +140,19 @@ export function DiceRollDisplay({
         <DiceRollResult
           key={`${result.type}-${index}`}
           result={result}
+          primaryMod={primaryMod}
           pending={pending}
         />
       ))}
-      {modifier !== 0 && (
+      {!hideTotal && modifier !== 0 && (
         <span className="flex items-center">
           {modifier > 0 ? "+ " : ""}
           {modifier}
         </span>
       )}
-      <span className="min-w-18">= {pending ? "  " : total}</span>
+      {!hideTotal && (
+        <span className="min-w-18">= {pending ? "  " : total}</span>
+      )}
     </div>
   );
 }

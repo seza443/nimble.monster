@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignoreUnknown": true
+    "ignoreUnknown": true,
+    "includes": [
+      "**",
+      "!data/paperforge-catalog.json",
+      "!tools",
+      "!app/ui/global.css"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -30,6 +36,9 @@
   "css": {
     "formatter": {
       "indentWidth": 4
+    },
+    "parser": {
+      "cssModules": false
     }
   },
   "assist": {

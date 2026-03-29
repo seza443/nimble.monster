@@ -12,6 +12,55 @@ interface ChangelogEntry {
 
 const changelog: ChangelogEntry[] = [
   {
+    date: "19 March 2026",
+    entries: ["Allow primary die modifiers on rolls. E.g. 1d6^1"],
+  },
+  {
+    date: "17 March 2026",
+    entries: ["Allow option lists on subclasses."],
+  },
+  {
+    date: "15 March 2026",
+    entries: [
+      "Add interactive advantage/disadvantage examples to rules reference.",
+      "Add illustrations to some rules pages. Thanks @swingsetpark!",
+    ],
+  },
+  {
+    date: "10 March 2026",
+    entries: ["Allow creating subclasses for homebrew classes."],
+  },
+  {
+    date: "5 March 2026",
+    entries: [
+      "Added a comprehensive Rules Reference section with full-text search, covering all core rules, character creation, magic, equipment, exploration, and GM tools.",
+    ],
+  },
+  {
+    date: "2 March 2026",
+    entries: [
+      "Custom class creation. Class options (Combat Tactics, Sacred Decrees, etc) now display inline on the class page.",
+    ],
+  },
+  {
+    date: "23 February 2026",
+    entries: [
+      "Add new pages for classes and class options. These are read-only currently. Creating new classes is coming soon.",
+      "Add official ancestries, backgrounds, classes, subclasses, and spell schools.",
+      "Links in descriptions now support custom display text: @type:[id|display text].",
+    ],
+  },
+  {
+    date: "17 February 2026",
+    entries: [
+      "Allow all types of objects to be put into collections: companions, ancestries, backgrounds, subclasses, and spell schools.",
+    ],
+  },
+  {
+    date: "15 February 2026",
+    entries: ["Improve collection create/edit UI."],
+  },
+  {
     date: "11 February 2026",
     entries: ["Add Paperforge image support to companions."],
   },

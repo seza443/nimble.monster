@@ -265,6 +265,7 @@ export const subclasses = sqliteTable(
       .$defaultFn(() => crypto.randomUUID()),
     name: text("name").notNull(),
     className: text("class_name").notNull(),
+    classId: text("class_id"),
     namePreface: text("name_preface"),
     description: text("description"),
     visibility: text("visibility")
@@ -280,7 +281,10 @@ export const subclasses = sqliteTable(
     updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
     tagline: text("tagline"),
   },
-  (table) => [index("idx_subclasses_user_id").on(table.userId)]
+  (table) => [
+    index("idx_subclasses_user_id").on(table.userId),
+    index("idx_subclasses_class_id").on(table.classId),
+  ]
 );
 
 // Subclass abilities table
@@ -329,6 +333,7 @@ export const spells = sqliteTable(
     highLevels: text("high_levels"),
     concentration: text("concentration"),
     upcast: text("upcast"),
+    utility: integer("utility", { mode: "boolean" }).notNull().default(false),
     createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
   },
@@ -453,7 +458,200 @@ export const entityImages = sqliteTable(
   ]
 );
 
+// Classes table
+export type ClassVisibility = "public" | "private";
+
+export const classes = sqliteTable(
+  "classes",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text("name").notNull(),
+    subclassNamePreface: text("subclass_name_preface").notNull().default(""),
+    description: text("description").notNull(),
+    keyStats: text("key_stats", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    hitDie: text("hit_die").notNull(),
+    startingHp: integer("starting_hp").notNull(),
+    saves: text("saves", { mode: "json" }).notNull().default("{}"),
+    armor: text("armor", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    weapons: text("weapons", { mode: "json" })
+      .$type<import("@/lib/types").WeaponSpec[]>()
+      .notNull()
+      .default([]),
+    startingGear: text("starting_gear", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    visibility: text("visibility")
+      .$type<ClassVisibility>()
+      .notNull()
+      .default("public"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onUpdate: "cascade" }),
+    sourceId: text("source_id").references(() => sources.id, {
+      onUpdate: "cascade",
+    }),
+    createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index("idx_classes_user_id").on(table.userId)]
+);
+
+// Class abilities table
+export const classAbilities = sqliteTable(
+  "class_abilities",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    classId: text("class_id")
+      .notNull()
+      .references(() => classes.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    level: integer("level").notNull(),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    orderIndex: integer("order_index").notNull(),
+  },
+  (table) => [
+    index("idx_class_abilities_class_level_order").on(
+      table.classId,
+      table.level,
+      table.orderIndex
+    ),
+  ]
+);
+
+// Class ability lists table
+export const classAbilityLists = sqliteTable(
+  "class_ability_lists",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    characterClass: text("character_class"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onUpdate: "cascade" }),
+    sourceId: text("source_id").references(() => sources.id),
+    createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index("idx_class_ability_lists_user_id").on(table.userId)]
+);
+
+// Class ability items table
+export const classAbilityItems = sqliteTable(
+  "class_ability_items",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    classAbilityListId: text("class_ability_list_id")
+      .notNull()
+      .references(() => classAbilityLists.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    orderIndex: integer("order_index").notNull(),
+  },
+  (table) => [
+    index("idx_class_ability_items_list_order").on(
+      table.classAbilityListId,
+      table.orderIndex
+    ),
+  ]
+);
+
 // Join tables
+
+// Classes to class ability lists
+export const classesClassAbilityLists = sqliteTable(
+  "classes_class_ability_lists",
+  {
+    classId: text("class_id")
+      .notNull()
+      .references(() => classes.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    abilityListId: text("ability_list_id")
+      .notNull()
+      .references(() => classAbilityLists.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    orderIndex: integer("order_index").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.classId, table.abilityListId] }),
+    index("idx_class_ability_list_links_class_order").on(
+      table.classId,
+      table.orderIndex
+    ),
+  ]
+);
+
+// Classes awards
+export const classesAwards = sqliteTable(
+  "classes_awards",
+  {
+    classId: text("class_id")
+      .notNull()
+      .references(() => classes.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    awardId: text("award_id")
+      .notNull()
+      .references(() => awards.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+  },
+  (table) => [primaryKey({ columns: [table.classId, table.awardId] })]
+);
+
+// Subclasses to class ability lists
+export const subclassesClassAbilityLists = sqliteTable(
+  "subclasses_class_ability_lists",
+  {
+    subclassId: text("subclass_id")
+      .notNull()
+      .references(() => subclasses.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    abilityListId: text("ability_list_id")
+      .notNull()
+      .references(() => classAbilityLists.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    orderIndex: integer("order_index").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.subclassId, table.abilityListId] }),
+    index("idx_subclass_ability_list_links_subclass_order").on(
+      table.subclassId,
+      table.orderIndex
+    ),
+  ]
+);
 
 // Monsters in collections
 export const monstersCollections = sqliteTable(
@@ -512,6 +710,106 @@ export const spellSchoolsCollections = sqliteTable(
   (table) => [
     primaryKey({ columns: [table.spellSchoolId, table.collectionId] }),
   ]
+);
+
+// Companions in collections
+export const companionsCollections = sqliteTable(
+  "companions_collections",
+  {
+    companionId: text("companion_id")
+      .notNull()
+      .references(() => companions.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    collectionId: text("collection_id")
+      .notNull()
+      .references(() => collections.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+  },
+  (table) => [primaryKey({ columns: [table.companionId, table.collectionId] })]
+);
+
+// Ancestries in collections
+export const ancestriesCollections = sqliteTable(
+  "ancestries_collections",
+  {
+    ancestryId: text("ancestry_id")
+      .notNull()
+      .references(() => ancestries.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    collectionId: text("collection_id")
+      .notNull()
+      .references(() => collections.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+  },
+  (table) => [primaryKey({ columns: [table.ancestryId, table.collectionId] })]
+);
+
+// Backgrounds in collections
+export const backgroundsCollections = sqliteTable(
+  "backgrounds_collections",
+  {
+    backgroundId: text("background_id")
+      .notNull()
+      .references(() => backgrounds.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    collectionId: text("collection_id")
+      .notNull()
+      .references(() => collections.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+  },
+  (table) => [primaryKey({ columns: [table.backgroundId, table.collectionId] })]
+);
+
+// Subclasses in collections
+export const subclassesCollections = sqliteTable(
+  "subclasses_collections",
+  {
+    subclassId: text("subclass_id")
+      .notNull()
+      .references(() => subclasses.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    collectionId: text("collection_id")
+      .notNull()
+      .references(() => collections.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+  },
+  (table) => [primaryKey({ columns: [table.subclassId, table.collectionId] })]
+);
+
+// Classes in collections
+export const classesCollections = sqliteTable(
+  "classes_collections",
+  {
+    classId: text("class_id")
+      .notNull()
+      .references(() => classes.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+    collectionId: text("collection_id")
+      .notNull()
+      .references(() => collections.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
+  },
+  (table) => [primaryKey({ columns: [table.classId, table.collectionId] })]
 );
 
 // Monsters conditions
@@ -687,6 +985,29 @@ export const ancestriesAwards = sqliteTable(
   (table) => [primaryKey({ columns: [table.ancestryId, table.awardId] })]
 );
 
+export const CLASS_DRAFT_NEW_SENTINEL = "__new__";
+
+// Class drafts table (auto-save form state)
+export const classDrafts = sqliteTable(
+  "class_drafts",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
+    classId: text("class_id").notNull().default(CLASS_DRAFT_NEW_SENTINEL),
+    data: text("data", { mode: "json" }).notNull(),
+    createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    unique().on(table.userId, table.classId),
+    index("idx_class_drafts_user_id").on(table.userId),
+  ]
+);
+
 // Type exports for row types
 export type UserRow = typeof users.$inferSelect;
 export type UserInsert = typeof users.$inferInsert;
@@ -720,3 +1041,35 @@ export type AncestryRow = typeof ancestries.$inferSelect;
 export type AncestryInsert = typeof ancestries.$inferInsert;
 export type EntityImageRow = typeof entityImages.$inferSelect;
 export type EntityImageInsert = typeof entityImages.$inferInsert;
+export type ClassRow = typeof classes.$inferSelect;
+export type ClassInsert = typeof classes.$inferInsert;
+export type ClassAbilityRow = typeof classAbilities.$inferSelect;
+export type ClassAbilityInsert = typeof classAbilities.$inferInsert;
+export type ClassAbilityListRow = typeof classAbilityLists.$inferSelect;
+export type ClassAbilityListInsert = typeof classAbilityLists.$inferInsert;
+export type ClassAbilityItemRow = typeof classAbilityItems.$inferSelect;
+export type ClassAbilityItemInsert = typeof classAbilityItems.$inferInsert;
+export type ClassDraftRow = typeof classDrafts.$inferSelect;
+export type ClassDraftInsert = typeof classDrafts.$inferInsert;
+
+// Reference entries table
+export const referenceEntries = sqliteTable(
+  "reference_entries",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    category: text("category").notNull(),
+    content: text("content").notNull(),
+    sourceFile: text("source_file").notNull(),
+    orderIndex: integer("order_index").notNull().default(0),
+    createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [index("idx_reference_entries_category").on(table.category)]
+);
+
+export type ReferenceEntryRow = typeof referenceEntries.$inferSelect;
+export type ReferenceEntryInsert = typeof referenceEntries.$inferInsert;

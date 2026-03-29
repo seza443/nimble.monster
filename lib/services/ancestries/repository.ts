@@ -12,6 +12,7 @@ import {
   type UserRow,
   users,
 } from "@/lib/db/schema";
+import { OFFICIAL_USER_ID } from "@/lib/services/monsters/official";
 import type { Source, User } from "@/lib/types";
 import type { CursorData } from "@/lib/utils/cursor";
 import { decodeCursor, encodeCursor } from "@/lib/utils/cursor";
@@ -195,8 +196,9 @@ export const paginatePublicAncestries = async ({
   sort = "-createdAt",
   search,
   creatorId,
-  sourceId,
-}: PaginateAncestriesParams): Promise<{
+  source,
+  officialOnly = false,
+}: PaginateAncestriesParams & { officialOnly?: boolean }): Promise<{
   data: Ancestry[];
   nextCursor: string | null;
 }> => {
@@ -216,12 +218,16 @@ export const paginatePublicAncestries = async ({
   // Build where conditions
   const conditions: ReturnType<typeof eq>[] = [];
 
+  if (officialOnly) {
+    conditions.push(eq(ancestries.userId, OFFICIAL_USER_ID));
+  }
+
   if (creatorId) {
     conditions.push(eq(ancestries.userId, creatorId));
   }
 
-  if (sourceId) {
-    conditions.push(eq(ancestries.sourceId, sourceId));
+  if (source) {
+    conditions.push(eq(sources.abbreviation, source));
   }
 
   if (search) {
@@ -423,7 +429,8 @@ export const listAllAncestriesForDiscordID = async (
 
 export const searchPublicAncestries = async ({
   searchTerm,
-  sourceId,
+  creatorId,
+  source,
   sortBy,
   sortDirection = "asc",
   limit,
@@ -438,8 +445,20 @@ export const searchPublicAncestries = async ({
     conditions.push(like(ancestries.name, `%${searchTerm}%`));
   }
 
-  if (sourceId) {
-    conditions.push(eq(ancestries.sourceId, sourceId));
+  if (creatorId) {
+    const userResult = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.discordId, creatorId))
+      .limit(1);
+
+    if (userResult.length > 0) {
+      conditions.push(eq(ancestries.userId, userResult[0].id));
+    }
+  }
+
+  if (source) {
+    conditions.push(eq(sources.abbreviation, source));
   }
 
   // Build order by
@@ -620,4 +639,111 @@ export const updateAncestry = async (
   };
 
   return toAncestryFromFullData(fullData);
+};
+
+export const findAncestriesByIds = async (
+  ids: string[]
+): Promise<Ancestry[]> => {
+  const validIds = ids.filter(isValidUUID);
+  if (validIds.length === 0) return [];
+
+  const db = await getDatabase();
+  const dataMap = await loadAncestryFullData(db, validIds);
+
+  return validIds
+    .map((id) => dataMap.get(id))
+    .filter((d): d is AncestryFullData => d !== undefined)
+    .map(toAncestryFromFullData);
+};
+
+export const upsertOfficialAncestry = async (
+  input: CreateAncestryInput
+): Promise<void> => {
+  const db = await getDatabase();
+
+  const existing = await db
+    .select({ id: ancestries.id })
+    .from(ancestries)
+    .where(
+      and(
+        eq(ancestries.name, input.name),
+        eq(ancestries.userId, OFFICIAL_USER_ID)
+      )
+    )
+    .limit(1);
+
+  const values = {
+    name: input.name,
+    description: input.description,
+    size: JSON.stringify(input.size),
+    rarity: input.rarity,
+    abilities: input.abilities,
+    visibility: "public",
+    sourceId: input.sourceId || null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (existing.length > 0) {
+    await db
+      .update(ancestries)
+      .set(values)
+      .where(eq(ancestries.id, existing[0].id));
+  } else {
+    await db.insert(ancestries).values({
+      id: crypto.randomUUID(),
+      ...values,
+      userId: OFFICIAL_USER_ID,
+      // Fixed timestamp so official content sorts consistently before user content
+      createdAt: "2024-01-01 00:00:00",
+    });
+  }
+};
+
+export const findOfficialAncestriesByNames = async (
+  names: string[]
+): Promise<Map<string, Ancestry>> => {
+  if (names.length === 0) return new Map();
+
+  const db = await getDatabase();
+
+  const rows = await db
+    .select()
+    .from(ancestries)
+    .innerJoin(users, eq(ancestries.userId, users.id))
+    .leftJoin(sources, eq(ancestries.sourceId, sources.id))
+    .where(
+      and(
+        inArray(ancestries.name, names),
+        eq(ancestries.userId, OFFICIAL_USER_ID)
+      )
+    );
+
+  if (rows.length === 0) return new Map();
+
+  const ancestryIds = rows.map((r) => r.ancestries.id);
+
+  const awardRows = await db
+    .select({ ancestryId: ancestriesAwards.ancestryId, award: awards })
+    .from(ancestriesAwards)
+    .innerJoin(awards, eq(ancestriesAwards.awardId, awards.id))
+    .where(inArray(ancestriesAwards.ancestryId, ancestryIds));
+
+  const awardsByAncestry = new Map<string, AwardRow[]>();
+  for (const row of awardRows) {
+    const existing = awardsByAncestry.get(row.ancestryId) || [];
+    existing.push(row.award);
+    awardsByAncestry.set(row.ancestryId, existing);
+  }
+
+  const result = new Map<string, Ancestry>();
+  for (const row of rows) {
+    const ancestry = toAncestryFromFullData({
+      ancestry: row.ancestries,
+      creator: row.users,
+      source: row.sources,
+      awards: awardsByAncestry.get(row.ancestries.id) || [],
+    });
+    result.set(ancestry.name, ancestry);
+  }
+  return result;
 };

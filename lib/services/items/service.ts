@@ -44,6 +44,18 @@ export class ItemsService {
     });
   }
 
+  async paginateMyItems(
+    userId: string,
+    params: PaginateItemsParams
+  ): Promise<PaginatePublicItemsResponse> {
+    const parsedParams = PaginateItemsSchema.parse(params);
+    return repository.paginateItems({
+      includePrivate: true,
+      creatorId: userId,
+      ...parsedParams,
+    });
+  }
+
   async getPublicItem(itemId: string): Promise<Item | null> {
     return repository.findPublicItemById(itemId);
   }
@@ -63,8 +75,11 @@ export class ItemsService {
     return repository.listPublicItemsForUser(userId);
   }
 
-  async getRandomRecentItems(limit?: number): Promise<Item[]> {
-    return repository.getRandomRecentItems(limit);
+  async getRandomRecentItems(
+    limit?: number,
+    officialOnly?: boolean
+  ): Promise<Item[]> {
+    return repository.getRandomRecentItems(limit, officialOnly);
   }
 
   async listItemsForUser(discordId: string): Promise<Item[]> {

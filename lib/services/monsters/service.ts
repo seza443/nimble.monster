@@ -19,7 +19,7 @@ const PaginateMonstersSchema = z.object({
   cursor: z.string().optional(),
   type: z.enum(MonsterTypeOptions).optional(),
   creatorId: z.string().optional(),
-  sourceId: z.string().optional(),
+  source: z.string().optional(),
   role: z.enum(MonsterRoleOptions).optional(),
   level: z.number().optional(),
 });
@@ -32,8 +32,11 @@ export type PaginatePublicMonstersResponse = {
 };
 
 export class MonstersService {
-  async getPublicMonster(id: string): Promise<Monster | null> {
-    return repository.findPublicMonsterById(id);
+  async getPublicMonster(
+    id: string,
+    officialOnly?: boolean
+  ): Promise<Monster | null> {
+    return repository.findPublicMonsterById(id, officialOnly);
   }
 
   async getPublicOrPrivateMonsterForUser(id: string, discordId: string | undefined): Promise<Monster | null> {
@@ -57,11 +60,13 @@ export class MonstersService {
   }
 
   async paginatePublicMonsters(
-    params: PaginateMonstersParams
+    params: PaginateMonstersParams,
+    officialOnly?: boolean
   ): Promise<PaginatePublicMonstersResponse> {
     const parsedParams = PaginateMonstersSchema.parse(params);
     return repository.paginateMonsters({
       includePrivate: false,
+      officialOnly,
       ...parsedParams,
     });
   }

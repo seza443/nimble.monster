@@ -26,20 +26,31 @@ export function publicMonstersInfiniteQueryOptions({
   search,
   sort = "-createdAt",
   type = "all",
-  sourceId,
+  source,
   role,
   level,
+  creatorId,
   limit = 12,
 }: Partial<{
   search?: string;
   sort: PaginateMonstersSortOption;
   type: MonsterTypeOption;
-  sourceId?: string;
+  source?: string;
   role?: MonsterRole;
   level?: number;
+  creatorId?: string;
   limit?: number;
 }> = {}) {
-  const params = { search, sort, type, sourceId, role, level, limit };
+  const params = {
+    search,
+    sort,
+    type,
+    source,
+    role,
+    level,
+    creatorId,
+    limit,
+  };
   return {
     queryKey: ["monsters", params],
     queryFn: ({ pageParam: cursor }: { pageParam?: string }) =>

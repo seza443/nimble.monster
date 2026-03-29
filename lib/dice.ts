@@ -46,10 +46,13 @@
 const MAX_EXPLOSIONS = 4;
 const MAX_ADVANTAGE_DISADVANTAGE = 7;
 
+export const VALID_DIE_SIZES = [4, 6, 8, 10, 12, 20, 44, 66, 88] as const;
+
 export type DiceRoll = {
   numDice: number;
   dieSize: number;
   modifier: number;
+  primaryMod: number;
   vicious: boolean;
   advantage: number;
   disadvantage: number;
@@ -135,6 +138,7 @@ export function parseDiceNotation(notation: string): DiceRoll | null {
       numDice: 2,
       dieSize,
       modifier: 0,
+      primaryMod: 0,
       vicious: false,
       advantage,
       disadvantage,
@@ -143,7 +147,8 @@ export function parseDiceNotation(notation: string): DiceRoll | null {
   }
 
   // Standard dice notation
-  const diceRegex = /^(\d+)d(\d+)([vad\d]+)?(?:([+-])(\d+))?$/;
+  // Groups: 1=numDice 2=dieSize 3=flags 4=primaryMod sign 5=primaryMod digits 6=modifier sign 7=modifier digits
+  const diceRegex = /^(\d+)d(\d+)([vad\d]+)?(?:\^(-?)(\d+))?(?:([+-])(\d+))?$/;
   const match = trimmed.match(diceRegex);
 
   if (!match) {
@@ -153,8 +158,13 @@ export function parseDiceNotation(notation: string): DiceRoll | null {
   const numDice = Number.parseInt(match[1], 10);
   const dieSize = Number.parseInt(match[2], 10);
 
-  // Reject die sizes 44, 66, 88 for standard notation (these are tensOnes only)
-  if (dieSize === 44 || dieSize === 66 || dieSize === 88) {
+  // tensOnes dice are only valid in dXX notation (handled above), not XdYY
+  if (
+    !(VALID_DIE_SIZES as readonly number[]).includes(dieSize) ||
+    dieSize === 44 ||
+    dieSize === 66 ||
+    dieSize === 88
+  ) {
     return null;
   }
 
@@ -180,10 +190,18 @@ export function parseDiceNotation(notation: string): DiceRoll | null {
     }
   }
 
-  let modifier = 0;
-  if (match[4] && match[5]) {
-    modifier = Number.parseInt(match[5], 10);
+  let primaryMod = 0;
+  if (match[5]) {
+    primaryMod = Number.parseInt(match[5], 10);
     if (match[4] === "-") {
+      primaryMod = -primaryMod;
+    }
+  }
+
+  let modifier = 0;
+  if (match[6] && match[7]) {
+    modifier = Number.parseInt(match[7], 10);
+    if (match[6] === "-") {
       modifier = -modifier;
     }
   }
@@ -207,6 +225,7 @@ export function parseDiceNotation(notation: string): DiceRoll | null {
     numDice,
     dieSize,
     modifier,
+    primaryMod,
     vicious,
     advantage,
     disadvantage,
@@ -216,23 +235,39 @@ export function parseDiceNotation(notation: string): DiceRoll | null {
 
 function primaryDie(
   dieSize: number,
-  vicious: boolean
+  vicious: boolean,
+  primaryMod: number
 ): ProbabilityDistribution {
   const baseProbability = 1 / dieSize;
   const result: ProbabilityDistribution = new Map();
 
-  // Case 1: Roll 1 -> miss
-  result.set(0, baseProbability);
+  // primaryMod shifts the effective value of the raw roll:
+  //   effective = rawRoll + primaryMod
+  // Miss:   effective <= 1  (raw roll was too low)
+  // Crit:   effective >= dieSize  (raw roll was high enough to hit max cap)
+  // Hit:    otherwise, value = effective
+  // Explosion always starts from dieSize regardless of how far above dieSize effective is.
+  // Calculate explosion distribution once; it is reused for every crit-triggering raw roll.
+  let explosionDist: ProbabilityDistribution | null = null;
 
-  // Case 2: Roll 2 to dieSize-1 -> no explosion, no vicious
-  for (let i = 2; i < dieSize; i++) {
-    result.set(i, baseProbability);
-  }
+  for (let r = 1; r <= dieSize; r++) {
+    const effective = r + primaryMod;
 
-  // Case 3: Roll dieSize (max) -> crit, explode, and if vicious add extra dice
-  const explosionDist = calculateExplosionDistribution(dieSize, vicious);
-  for (const [value, prob] of explosionDist) {
-    result.set(value, (result.get(value) || 0) + baseProbability * prob);
+    if (effective <= 1) {
+      // Critical miss
+      result.set(0, (result.get(0) || 0) + baseProbability);
+    } else if (effective >= dieSize) {
+      // Critical hit — explode from dieSize
+      if (!explosionDist) {
+        explosionDist = calculateExplosionDistribution(dieSize, vicious);
+      }
+      for (const [value, prob] of explosionDist) {
+        result.set(value, (result.get(value) || 0) + baseProbability * prob);
+      }
+    } else {
+      // Regular hit at effective value
+      result.set(effective, (result.get(effective) || 0) + baseProbability);
+    }
   }
 
   return result;
@@ -368,7 +403,8 @@ function calculateAdvantageDistribution(
   dieSize: number,
   advantage: number,
   disadvantage: number,
-  vicious: boolean
+  vicious: boolean,
+  primaryMod: number
 ): ProbabilityDistribution {
   const extraDice = advantage > 0 ? advantage : disadvantage;
   const totalDice = numDice + extraDice;
@@ -401,12 +437,17 @@ function calculateAdvantageDistribution(
       }
     }
 
-    // Apply primary die logic
-    if (primaryDie.value === 1) {
+    // Apply primary die logic using effective value (raw roll + primaryMod).
+    // Miss:  effective <= 1
+    // Crit:  effective >= dieSize (explosion always starts from dieSize)
+    // Hit:   otherwise, value = effective
+    const effective = primaryDie.value + primaryMod;
+
+    if (effective <= 1) {
       // Miss
       result.set(0, (result.get(0) || 0) + probability);
-    } else if (primaryDie.value === dieSize) {
-      // Crit - primary die explodes
+    } else if (effective >= dieSize) {
+      // Crit — explode from dieSize
       const explosionDist = calculateExplosionDistribution(dieSize, vicious);
 
       for (const [explosionValue, explosionP] of explosionDist) {
@@ -414,8 +455,8 @@ function calculateAdvantageDistribution(
         result.set(total, (result.get(total) || 0) + probability * explosionP);
       }
     } else {
-      // Regular hit
-      const total = primaryDie.value + otherDiceSum;
+      // Regular hit at effective value
+      const total = effective + otherDiceSum;
       result.set(total, (result.get(total) || 0) + probability);
     }
   });
@@ -515,6 +556,7 @@ export function calculateProbabilityDistribution(
     numDice,
     dieSize,
     modifier,
+    primaryMod,
     vicious,
     advantage,
     disadvantage,
@@ -531,12 +573,13 @@ export function calculateProbabilityDistribution(
       dieSize,
       advantage,
       disadvantage,
-      vicious
+      vicious,
+      primaryMod
     );
   } else if (numDice === 1) {
-    result = primaryDie(dieSize, vicious);
+    result = primaryDie(dieSize, vicious, primaryMod);
   } else {
-    const firstDieDistribution = primaryDie(dieSize, vicious);
+    const firstDieDistribution = primaryDie(dieSize, vicious, primaryMod);
     const restDistribution = regularDiceDistribution(numDice - 1, dieSize);
     result = combineProbabilityDistributions(
       firstDieDistribution,
@@ -593,19 +636,23 @@ export type DieResult = {
 export type RollResult = {
   results: DieResult[];
   modifier: number;
+  primaryMod: number;
   total: number;
 };
 
 function simulateExplosion(
   dieSize: number,
-  vicious: boolean
+  vicious: boolean,
+  // The raw die value to display; may differ from dieSize when primaryMod promotes
+  // a sub-max roll to a crit. The total still starts from dieSize regardless.
+  displayValue: number = dieSize
 ): { dice: DieResult[]; total: number } {
   const dice: DieResult[] = [];
   let total = 0;
 
-  // Initial max roll
+  // Initial max roll — display the raw value, but total counts dieSize
   dice.push({
-    value: dieSize,
+    value: displayValue,
     dieSize,
     type: "primary",
     isCrit: true,
@@ -731,7 +778,8 @@ function simulateAdvantageRoll(
   dieSize: number,
   vicious: boolean,
   advantage: number,
-  disadvantage: number
+  disadvantage: number,
+  primaryMod: number
 ): { results: DieResult[]; total: number } {
   const results: DieResult[] = [];
   let total = 0;
@@ -770,13 +818,15 @@ function simulateAdvantageRoll(
   const primaryDie = allRolls[primaryDieIndex];
   let explosionDice: DieResult[] = [];
 
-  if (primaryDie.value === 1) {
+  const primaryEffective = primaryDie.value + primaryMod;
+
+  if (primaryEffective <= 1) {
     primaryDie.isMiss = true;
     primaryDie.type = "primary";
     total = 0;
-  } else if (primaryDie.value === dieSize) {
-    // Primary die rolled max - explode it
-    const explosion = simulateExplosion(dieSize, vicious);
+  } else if (primaryEffective >= dieSize) {
+    // Crit — explosion starts from dieSize, but display shows the raw roll
+    const explosion = simulateExplosion(dieSize, vicious, primaryDie.value);
     explosionDice = explosion.dice;
     total += explosion.total;
 
@@ -788,7 +838,7 @@ function simulateAdvantageRoll(
     }
   } else {
     primaryDie.type = "primary";
-    total = primaryDie.value;
+    total = primaryEffective;
 
     for (let i = 0; i < totalDice; i++) {
       if (keptSet.has(i) && i !== primaryDieIndex) {
@@ -823,19 +873,21 @@ function simulateAdvantageRoll(
 function simulateStandardRoll(
   numDice: number,
   dieSize: number,
-  vicious: boolean
+  vicious: boolean,
+  primaryMod: number
 ): { results: DieResult[]; total: number } {
   const results: DieResult[] = [];
   let total = 0;
 
   const primaryValue = Math.floor(Math.random() * dieSize) + 1;
+  const primaryEffective = primaryValue + primaryMod;
   let explosionDice: DieResult[] = [];
 
   // Roll all dice first
   const allDice: DieResult[] = [];
 
-  // Primary die
-  if (primaryValue === 1) {
+  // Primary die: use effective value for miss/crit thresholds
+  if (primaryEffective <= 1) {
     allDice.push({
       value: primaryValue,
       dieSize,
@@ -844,9 +896,9 @@ function simulateStandardRoll(
       isMiss: true,
     });
     total = 0;
-  } else if (primaryValue === dieSize) {
-    // Primary die rolled max - explode it
-    const explosion = simulateExplosion(dieSize, vicious);
+  } else if (primaryEffective >= dieSize) {
+    // Crit — explosion starts from dieSize, but display shows the raw roll
+    const explosion = simulateExplosion(dieSize, vicious, primaryValue);
     explosionDice = explosion.dice;
     total += explosion.total;
   } else {
@@ -857,7 +909,7 @@ function simulateStandardRoll(
       isCrit: false,
       isMiss: false,
     });
-    total = primaryValue;
+    total = primaryEffective;
   }
 
   // Other dice
@@ -889,6 +941,7 @@ export function simulateRoll(diceRoll: DiceRoll): RollResult {
     numDice,
     dieSize,
     modifier,
+    primaryMod,
     vicious,
     advantage,
     disadvantage,
@@ -910,15 +963,21 @@ export function simulateRoll(diceRoll: DiceRoll): RollResult {
       dieSize,
       vicious,
       advantage,
-      disadvantage
+      disadvantage,
+      primaryMod
     ));
   } else {
-    ({ results, total } = simulateStandardRoll(numDice, dieSize, vicious));
+    ({ results, total } = simulateStandardRoll(
+      numDice,
+      dieSize,
+      vicious,
+      primaryMod
+    ));
   }
 
   if (total > 0) {
     total += modifier;
   }
 
-  return { results, modifier, total };
+  return { results, modifier, primaryMod, total };
 }

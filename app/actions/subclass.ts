@@ -3,11 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import * as db from "@/lib/db";
-import type {
-  SubclassClass,
-  SubclassLevel,
-  SubclassVisibility,
-} from "@/lib/types";
+import type { SubclassLevel, SubclassVisibility } from "@/lib/types";
 import { getSubclassUrl } from "@/lib/utils/url";
 
 export async function searchPublicSubclasses(params: {
@@ -29,11 +25,18 @@ export async function searchPublicSubclasses(params: {
 
 export async function createSubclass(formData: {
   name: string;
-  className: SubclassClass;
+  classId?: string | null;
+  className: string;
   namePreface?: string;
   tagline?: string;
   description?: string;
   levels: SubclassLevel[];
+  abilityListIds?: string[];
+  abilityLists?: Array<{
+    name: string;
+    description: string;
+    items: Array<{ name: string; description: string }>;
+  }>;
   visibility: SubclassVisibility;
 }) {
   try {
@@ -62,11 +65,18 @@ export async function updateSubclass(
   subclassId: string,
   formData: {
     name: string;
-    className: SubclassClass;
+    classId?: string | null;
+    className: string;
     namePreface?: string;
     tagline?: string;
     description?: string;
     levels: SubclassLevel[];
+    abilityListIds?: string[];
+    abilityLists?: Array<{
+      name: string;
+      description: string;
+      items: Array<{ name: string; description: string }>;
+    }>;
     visibility: SubclassVisibility;
   }
 ) {
@@ -130,4 +140,8 @@ export async function deleteSubclass(subclassId: string) {
     success: false,
     error: "Could not delete the subclass. Please try again.",
   };
+}
+
+export async function listPublicSubclassesAction() {
+  return db.listPublicSubclasses();
 }

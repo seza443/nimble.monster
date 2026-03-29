@@ -198,3 +198,22 @@ export function getUserUrl(user: { username: string }): string {
 export function getAwardUrl(award: { slug: string }): string {
   return `/awards/${award.slug}`;
 }
+
+// Class URLs
+export function getClassSlug(classEntity: {
+  name: string;
+  id: string;
+}): string {
+  return slugify(classEntity);
+}
+
+export function getClassUrl(classEntity: { name: string; id: string }): string {
+  return `/classes/${getClassSlug(classEntity)}`;
+}
+
+export function getClassEditUrl(classEntity: {
+  name: string;
+  id: string;
+}): string {
+  return `/classes/${getClassSlug(classEntity)}/edit`;
+}

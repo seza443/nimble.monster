@@ -1,4 +1,5 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, like } from "drizzle-orm";
+import { OFFICIAL_USER_ID } from "@/lib/services/monsters/official";
 import type {
   Award,
   Source,
@@ -69,7 +70,11 @@ const toSpellSchoolMini = (s: SpellSchoolRow): SpellSchoolMini => ({
   createdAt: s.createdAt ? new Date(s.createdAt) : new Date(),
 });
 
-const buildSpellTarget = (s: SpellRow): SpellTarget | undefined => {
+export const buildSpellTarget = (s: {
+  targetType?: string | null;
+  targetKind?: string | null;
+  targetDistance?: number | null;
+}): SpellTarget | undefined => {
   if (!s.targetType) return undefined;
   if (s.targetType === "self") {
     return { type: "self" };
@@ -91,6 +96,34 @@ const buildSpellTarget = (s: SpellRow): SpellTarget | undefined => {
   return undefined;
 };
 
+export const spellTargetToDbColumns = (
+  target: SpellTarget | undefined
+): {
+  targetType: string | undefined;
+  targetKind: string | undefined;
+  targetDistance: number | undefined;
+} => {
+  if (!target) {
+    return {
+      targetType: undefined,
+      targetKind: undefined,
+      targetDistance: undefined,
+    };
+  }
+  if (target.type === "self") {
+    return {
+      targetType: "self",
+      targetKind: undefined,
+      targetDistance: undefined,
+    };
+  }
+  return {
+    targetType: target.type,
+    targetKind: target.kind,
+    targetDistance: target.distance,
+  };
+};
+
 const toSpell = (s: SpellRow): Spell => ({
   id: s.id,
   name: s.name,
@@ -98,6 +131,7 @@ const toSpell = (s: SpellRow): Spell => ({
   tier: s.tier,
   actions: s.actions,
   reaction: s.reaction || false,
+  utility: s.utility || false,
   target: buildSpellTarget(s),
   damage: s.damage || undefined,
   description: s.description || undefined,
@@ -209,13 +243,19 @@ export const deleteSpellSchool = async (input: {
   return result.rowsAffected > 0;
 };
 
-export const listPublicSpellSchools = async (): Promise<SpellSchool[]> => {
+export const listPublicSpellSchools = async (
+  officialOnly = false
+): Promise<SpellSchool[]> => {
   const db = getDatabase();
 
+  const conditions = [eq(spellSchools.visibility, "public")];
+  if (officialOnly) {
+    conditions.push(eq(spellSchools.userId, OFFICIAL_USER_ID));
+  }
   const schoolRows = await db
     .select({ id: spellSchools.id })
     .from(spellSchools)
-    .where(eq(spellSchools.visibility, "public"))
+    .where(and(...conditions))
     .orderBy(asc(spellSchools.name));
 
   if (schoolRows.length === 0) return [];
@@ -237,6 +277,47 @@ export const listSpellSchoolMinis = async (): Promise<SpellSchoolMini[]> => {
     .from(spellSchools)
     .where(eq(spellSchools.visibility, "public"))
     .orderBy(asc(spellSchools.name));
+
+  return rows.map(toSpellSchoolMini);
+};
+
+export const searchPublicSpellSchools = async ({
+  searchTerm,
+  creatorId,
+  limit = 50,
+}: {
+  searchTerm?: string;
+  creatorId?: string;
+  limit?: number;
+}): Promise<SpellSchoolMini[]> => {
+  const db = getDatabase();
+
+  const conditions: ReturnType<typeof eq>[] = [
+    eq(spellSchools.visibility, "public"),
+  ];
+
+  if (creatorId) {
+    const userResult = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.discordId, creatorId))
+      .limit(1);
+
+    if (userResult.length > 0) {
+      conditions.push(eq(spellSchools.userId, userResult[0].id));
+    }
+  }
+
+  if (searchTerm) {
+    conditions.push(like(spellSchools.name, `%${searchTerm}%`));
+  }
+
+  const rows = await db
+    .select()
+    .from(spellSchools)
+    .where(and(...conditions))
+    .orderBy(asc(spellSchools.name))
+    .limit(limit);
 
   return rows.map(toSpellSchoolMini);
 };
@@ -377,6 +458,7 @@ export interface CreateSpellSchoolInput {
     tier: number;
     actions: number;
     reaction?: boolean;
+    utility?: boolean;
     target?: SpellTarget;
     damage?: string;
     description?: string;
@@ -424,7 +506,8 @@ export const createSpellSchool = async (
         tier: spell.tier,
         actions: spell.actions,
         reaction: spell.reaction || false,
-        target: spell.target || undefined,
+        utility: spell.utility || false,
+        ...spellTargetToDbColumns(spell.target),
         damage: spell.damage || undefined,
         description: spell.description || undefined,
         highLevels: spell.highLevels || undefined,
@@ -502,7 +585,8 @@ export const updateSpellSchool = async (
         tier: spell.tier,
         actions: spell.actions,
         reaction: spell.reaction || false,
-        target: spell.target || undefined,
+        utility: spell.utility || false,
+        ...spellTargetToDbColumns(spell.target),
         damage: spell.damage || undefined,
         description: spell.description || undefined,
         highLevels: spell.highLevels || undefined,
@@ -552,4 +636,28 @@ export const findSpellSchoolWithCreatorDiscordId = async (
   const data = dataMap.get(id);
 
   return data ? toSpellSchool(data) : null;
+};
+
+export const getSpellSchoolUrlsByName = async (
+  names: string[]
+): Promise<Map<string, string>> => {
+  if (names.length === 0) return new Map();
+
+  const db = getDatabase();
+  const rows = await db
+    .select({ id: spellSchools.id, name: spellSchools.name })
+    .from(spellSchools)
+    .where(
+      and(
+        inArray(spellSchools.name, names),
+        eq(spellSchools.visibility, "public")
+      )
+    );
+
+  const { getSpellSchoolUrl } = await import("@/lib/utils/url");
+  const result = new Map<string, string>();
+  for (const row of rows) {
+    result.set(row.name, getSpellSchoolUrl(row));
+  }
+  return result;
 };

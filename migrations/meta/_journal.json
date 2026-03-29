@@ -12,15 +12,78 @@
     {
       "idx": 1,
       "version": "6",
-      "when": 1770783873171,
-      "tag": "0002_add_companion_paperforge_id",
+      "when": 1770611322962,
+      "tag": "0001_curious_penance",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "6",
-      "when": 1774811299148,
-      "tag": "0003_add_monster_share_token",
+      "when": 1770783873171,
+      "tag": "0002_add_companion_paperforge_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1771345500000,
+      "tag": "0003_add_missing_collections_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1771346000000,
+      "tag": "0004_add_classes",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1771886400000,
+      "tag": "0005_add_spell_utility",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1771890095523,
+      "tag": "0006_naive_satana",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1772466306564,
+      "tag": "0007_burly_wolf_cub",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1772753455000,
+      "tag": "0008_reference_entries",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1773003202481,
+      "tag": "0009_tough_enchantress",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1773278792486,
+      "tag": "0010_busy_freak",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1774820538131,
+      "tag": "0011_perfect_mandarin",
       "breakpoints": true
     }
   ]

@@ -1,0 +1,1 @@
+ALTER TABLE `class_ability_lists` ADD `source_id` text REFERENCES sources(id);

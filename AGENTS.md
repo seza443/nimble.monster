@@ -1,13 +1,18 @@
+# Worktrees (wt)
+
+This project uses [worktrunk](https://worktrunk.dev) (`wt`) for parallel worktree workflows. Config: `.config/wt.toml`.
+
+- Worktrees are created as sibling directories: `../nimble.nexus.<branch-name>`
+- On create, the hook copies `db/dev.db`, `.env.local`, and `data/paperforge` from main, symlinks `public/paperforge`, then runs `make setup`
+
 # Build Commands
 
 - `make check` - Lint and type-check (dev-safe, use this during development)
   - You must run this after making changes to ensure there are no type errors or lint errors.
+  - Never dismiss type errors as "pre-existing" and skip them. If `make check` fails, you must fix ALL errors, even if they weren't introduced by your changes.
 - `make lint` - Biome check (linting, formatting, import sorting)
-- `make type-check` - TypeScript check only
 - `make setup` - Install deps, set up DB, sync icons
 - `pnpm run build` - Production build (breaks dev server. Only run when asked. Always run `rm -rf .next` after.)
-- Assume the dev server is already running on localhost:3000 and can be accessed via playwright.
-  - Do not ever run `pnpm run dev`
 
 # Database
 
@@ -59,9 +64,11 @@ Workflow:
 - In this version of Next.js, params are a Promise that need to be awaited.
 - Use OpenTelemetry.
 - Do not add console.\* functions permanently (they may be used for temporary debugging).
-- Use `cn `from lib/utils.ts for constructing dynamic className attributes. DO NOT use string concatenation for className.
+- Use `cn` from lib/utils.ts for constructing dynamic className attributes. DO NOT use string concatenation for className.
+- Never use `crypto.randomUUID()` directly in client components — it requires a secure context (HTTPS/localhost) and will throw on plain HTTP. Use `randomUUID()` from `lib/utils.ts` instead, which has a `Math.random` fallback.
 - You may not use an empty string value="" on a <Select> element. Use "none" and special-case this value to be null/undefined as appropriate.
 - Use lucide icons instead of custom SVGs
+- Always prefer reusing existing components over creating new ones. Before building a new component to display an entity, search for how that entity is already rendered elsewhere (e.g. detail pages, list cards) and reuse those components.
 
 # Tests
 
